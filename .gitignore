@@ -1,0 +1,4 @@
+.aiexclude
+.vscode/
+__pycache__/
+*.pyc

@@ -10,8 +10,11 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QFileDialog,
     QRadioButton,
+    QToolButton,
+    QMessageBox,
 )
 from PyQt6.QtCore import Qt
+import qtawesome as qta
 
 
 class ErrorBarDialog(QDialog):
@@ -34,7 +37,25 @@ class ErrorBarDialog(QDialog):
         mode_layout.addWidget(self.manual_radio)
         mode_layout.addWidget(self.file_radio)
         mode_group.setLayout(mode_layout)
+        mode_group.setLayout(mode_layout)
         layout.addWidget(mode_group)
+
+        # --- Manual Percentage Inputs ---
+        self.manual_group = QGroupBox("Manual Uncertainties (%)")
+        manual_layout = QFormLayout()
+
+        self.temp_err_edit = QLineEdit("1.0")
+        self.sigma_err_edit = QLineEdit("3.0")
+        self.seebeck_err_edit = QLineEdit("3.0")
+        self.kappa_err_edit = QLineEdit("5.0")
+
+        manual_layout.addRow("Temperature Error (%):", self.temp_err_edit)
+        manual_layout.addRow("Conductivity Error (%):", self.sigma_err_edit)
+        manual_layout.addRow("Seebeck Error (%):", self.seebeck_err_edit)
+        manual_layout.addRow("Thermal Cond. Error (%):", self.kappa_err_edit)
+
+        self.manual_group.setLayout(manual_layout)
+        layout.addWidget(self.manual_group)
 
         # --- File Selection ---
         self.file_group = QGroupBox("Measurement Files")
@@ -59,8 +80,8 @@ class ErrorBarDialog(QDialog):
 
         self.file_group.setEnabled(False)
 
-        self.manual_radio.toggled.connect(lambda: self.file_group.setEnabled(False))
-        self.file_radio.toggled.connect(lambda: self.file_group.setEnabled(True))
+        self.manual_radio.toggled.connect(self.toggle_mode)
+        self.file_radio.toggled.connect(self.toggle_mode)
 
         self.df_lf = None
         self.df_lf = None
@@ -107,9 +128,25 @@ class ErrorBarDialog(QDialog):
         sys_group = QGroupBox("System Uncertainties")
         sys_layout = QFormLayout()
 
+        # Seebeck Reference Error with Help Button
+        s_err_layout = QHBoxLayout()
         self.seebeck_ref_err_edit = QLineEdit("2.0")  # Systematic error for reference
+        self.s_help_btn = QToolButton()
+        self.s_help_btn.setIcon(qta.icon("fa5s.question-circle", color="#3498db"))
+        self.s_help_btn.setToolTip("Click for help on Seebeck units and uncertainties")
+        self.s_help_btn.clicked.connect(self.show_seebeck_help)
 
-        sys_layout.addRow("Ref. Seebeck Err (μV/K):", self.seebeck_ref_err_edit)
+        s_err_layout.addWidget(self.seebeck_ref_err_edit)
+        s_err_layout.addWidget(self.s_help_btn)
+
+        sys_layout.addRow("Ref. Seebeck Err (μV/K):", s_err_layout)
+
+        # Add a small note at the bottom of the group
+        unit_note = QLabel(
+            "<i>Note: All Seebeck values in this tool are handled in μV/K.</i>"
+        )
+        unit_note.setStyleSheet("color: #7f8c8d; font-size: 9pt;")
+        sys_layout.addRow(unit_note)
 
         sys_group.setLayout(sys_layout)
         layout.addWidget(sys_group)
@@ -121,6 +158,15 @@ class ErrorBarDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
+
+    def toggle_mode(self):
+        is_manual = self.manual_radio.isChecked()
+        self.manual_group.setVisible(is_manual)
+        self.file_group.setVisible(not is_manual)
+        # Geometry might be needed for both? Or just file mode usually implies advanced specific errors.
+        # But manual percentages override detailed props.
+        self.geom_group.setVisible(not is_manual)
+        self.seebeck_ref_err_edit.setEnabled(not is_manual)
 
     def browse_seebeck(self):
         file_path, _ = QFileDialog.getOpenFileName(
@@ -143,6 +189,21 @@ class ErrorBarDialog(QDialog):
                     # self.df_sb_raw.to_excel(export_path, index=False)
             except Exception as e:
                 print(f"Auto-processing Seebeck failed: {e}")
+
+    def show_seebeck_help(self):
+        """Shows informative help about Seebeck units."""
+        QMessageBox.information(
+            self,
+            "Seebeck Unit Information",
+            "<h3>Seebeck Coefficient Units</h3>"
+            "<p>In this application and error propagation tool:</p>"
+            "<ul>"
+            "<li><b>Input/Display:</b> Seebeck values and their uncertainties are handled in <b>Microvolt/Kelvin (μV/K)</b>.</li>"
+            "<li><b>Internal Calculation:</b> For physical transport equations (like Power Factor or Lorenz number Estimation), "
+            "the Seebeck is automatically converted to <b>Volt/Kelvin (V/K)</b> to ensure unit consistency.</li>"
+            "</ul>"
+            "<p>The 'Ref. Seebeck Err' should be provided in μV/K.</p>",
+        )
 
     def view_seebeck(self):
         if self.df_sb_raw is not None:
@@ -192,10 +253,26 @@ class ErrorBarDialog(QDialog):
                     if self.seebeck_ref_err_edit.text()
                     else 0.0
                 ),
-                "temp_err_pct": 0.0,  # Removed from UI
-                "seebeck_err_pct": 0.0,  # Removed from UI
-                "sigma_err_pct": 0.0,  # Removed from UI
-                "kappa_err_pct": 0.0,  # Removed from UI
+                "temp_err_pct": (
+                    float(self.temp_err_edit.text()) / 100.0
+                    if self.temp_err_edit.text()
+                    else 0.0
+                ),
+                "seebeck_err_pct": (
+                    float(self.seebeck_err_edit.text()) / 100.0
+                    if self.seebeck_err_edit.text()
+                    else 0.0
+                ),
+                "sigma_err_pct": (
+                    float(self.sigma_err_edit.text()) / 100.0
+                    if self.sigma_err_edit.text()
+                    else 0.0
+                ),
+                "kappa_err_pct": (
+                    float(self.kappa_err_edit.text()) / 100.0
+                    if self.kappa_err_edit.text()
+                    else 0.0
+                ),
             }
 
         except ValueError:

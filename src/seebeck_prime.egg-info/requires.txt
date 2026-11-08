@@ -1,0 +1,13 @@
+numpy
+pandas
+scipy
+matplotlib
+pyqt6
+pytz
+
+[dev]
+pytest
+pytest-cov
+black
+ruff
+mypy

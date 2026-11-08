@@ -96,6 +96,26 @@ def create_menu_bar(mw):
     weighted_mobility_action.triggered.connect(mw.open_weighted_mobility_tool)
     tools_menu.addAction(weighted_mobility_action)
 
+    hall_mobility_action = QAction(
+        qta.icon("fa5s.magnet"), "Hall Mobility & Carrier Transport...", mw
+    )
+    hall_mobility_action.setStatusTip(
+        "Calculate Hall mobility (μ_H), carrier density (n_H), and scattering exponents"
+    )
+    hall_mobility_action.triggered.connect(mw.open_hall_mobility_tool)
+    tools_menu.addAction(hall_mobility_action)
+
+    spb_tool_action = QAction(
+        qta.icon("fa5s.atom"), "SPB Modeling & Transport Optimization...", mw
+    )
+    spb_tool_action.setStatusTip(
+        "Single Parabolic Band model, effective mass estimation, Pisarenko curves, and optimal doping"
+    )
+    spb_tool_action.triggered.connect(mw.open_spb_tool)
+    tools_menu.addAction(spb_tool_action)
+
+
+
     help_menu = menu_bar.addMenu("&Help")
     about_action = QAction(qta.icon("fa5s.info-circle"), "&About", mw)
     about_action.triggered.connect(mw.about_app)

@@ -27,23 +27,26 @@ import matplotlib.pyplot as plt
 import scienceplots
 
 # --- New Module Imports ---
-from src.ui.widgets.table_widget import ClipboardAwareTableWidget
+from seebeck_prime.gui.table import ClipboardAwareTableWidget
 from src.ui.widgets.plot_window import PlotWindow
 from src.ui.dialogs.kappa_dialog import KappaToolDialog
 from src.ui.dialogs.multi_sample_dialog import MultiSampleDialog
 from src.ui.dialogs.plot_data_dialog import PlotDataDialog
 from src.ui.dialogs.weighted_mobility_dialog import WeightedMobilityDialog
+from src.ui.dialogs.hall_mobility_dialog import HallMobilityDialog
+from src.ui.dialogs.spb_dialog import SPBModelingDialog
 from src.ui.dialogs.device_efficiency_dialog import DeviceEfficiencyDialog
 
 # Logic Modules
-import src.ui.logic.file_handler as file_handler
+import seebeck_prime.infrastructure.io as file_handler
 import src.ui.logic.table_handler as table_handler
 import src.ui.logic.unit_converter as unit_converter
-import src.ui.logic.plot_handler as plot_handler
+import seebeck_prime.plot.plotter as plot_handler
 import src.ui.logic.ui_builder as ui_builder
 
-import src.core.calculations as calc
-import src.core.error_propagation as error_calc
+import seebeck_prime.domain.calculations as calc
+import seebeck_prime.domain.uncertainty as error_calc
+from seebeck_prime.application.services import ThermoelectricAnalyzer
 from src.ui.dialogs.error_bar_dialog import ErrorBarDialog
 
 #  Constants for column indices are now in table_handler
@@ -192,7 +195,7 @@ class ThermoelectricApp(QMainWindow):
             else:
                 display_value = float(display_value_str)
                 # Convert from the user's display unit to the base unit for storage
-                base_value = self._convert_to_base_unit(display_value, column)
+                base_value, _ = self._convert_to_base_unit(display_value, None, column)
                 self.data.iloc[row, column] = base_value
 
                 # Re-format the entered number in the cell for consistency
@@ -308,7 +311,7 @@ class ThermoelectricApp(QMainWindow):
             if u.get("mode") == "file":
                 # File-based calculation
                 try:
-                    analyzer = error_calc.ThermoelectricAnalyzer(
+                    analyzer = ThermoelectricAnalyzer(
                         four_probe_file=u.get("fp_file"),
                         lf_file=u.get("lf_file"),
                         seebeck_raw_file=u.get("seebeck_raw_file"),
@@ -389,19 +392,19 @@ class ThermoelectricApp(QMainWindow):
                         mapping = {
                             "T_K": "Temperature",
                             "sigma": "Electrical Conductivity",
-                            "sigma_err": "±σ",
+                            "±σ": "±σ",
                             "S": "Seebeck Coeff.",
-                            "S_err": "±u(S)",
+                            "±S": "±S",
                             "PF": "Power Factor",
-                            "PF_err": "±u(PF)",
+                            "±PF": "±PF",
                             "kappa": "Thermal Cond.",
-                            "kappa_err": "±u(κ)",
+                            "±κ": "±κ",
                             "kappa_e": "Electronic TC",
-                            "kappa_e_err": "±u(κₑ)",
+                            "±κₑ": "±κₑ",
                             "kappa_L": "Lattice TC",
-                            "kappa_L_err": "±u(κₗ)",
+                            "±κₗ": "±κₗ",
                             "ZT": "ZT",
-                            "ZT_err": "±u(ZT)",
+                            "±ZT": "±ZT",
                         }
 
                         # Create a new structure
@@ -438,22 +441,22 @@ class ThermoelectricApp(QMainWindow):
             l_err = 0.0  # Lorenz number is treated as a fixed number
 
             df["±σ"] = ec_err
-            df["±u(S)"] = s_err
+            df["±S"] = s_err
 
-            df["±u(PF)"] = error_calc.calculate_pf_error(
+            df["±PF"] = error_calc.calculate_pf_error(
                 df["Seebeck Coeff."], s_err, df["Electrical Conductivity"], ec_err
             )
 
             # Error in Thermal Conductivity
             # If we already have values in the table (e.g. from Kappa tool), use them
-            if "±u(κ)" in df.columns and not df["±u(κ)"].isna().all():
-                k_err = df["±u(κ)"]
+            if "±κ" in df.columns and not df["±κ"].isna().all():
+                k_err = df["±κ"]
             else:
                 k_err = df["Thermal Cond."] * u["kappa_err_pct"]
 
-            df["±u(κ)"] = k_err
+            df["±κ"] = k_err
 
-            df["±u(κₑ)"] = error_calc.calculate_kappa_e_error(
+            df["±κₑ"] = error_calc.calculate_kappa_e_error(
                 df["Electrical Conductivity"],
                 ec_err,
                 df["Temperature"],
@@ -462,11 +465,11 @@ class ThermoelectricApp(QMainWindow):
                 l_err,
             )
 
-            df["±u(κₗ)"] = error_calc.calculate_kappa_l_error(df["±u(κ)"], df["±u(κₑ)"])
+            df["±κₗ"] = error_calc.calculate_kappa_l_error(df["±κ"], df["±κₑ"])
 
-            df["±u(ZT)"] = error_calc.calculate_zt_error(
+            df["±ZT"] = error_calc.calculate_zt_error(
                 df["Power Factor"],
-                df["±u(PF)"],
+                df["±PF"],
                 df["Temperature"],
                 t_err,
                 df["Thermal Cond."],
@@ -490,14 +493,18 @@ class ThermoelectricApp(QMainWindow):
         self.units["pf"] = self.pf_combo.currentText()
         unit_converter.on_unit_changed(self)
 
-    def _convert_to_base_unit(self, value, column_index):
-        return unit_converter._convert_to_base_unit(self, value, column_index)
+    def _convert_to_base_unit(self, value, uncertainty, column_index):
+        return unit_converter._convert_to_base_unit(
+            self, value, uncertainty, column_index
+        )
 
-    def _convert_from_base_unit(self, value, column_index):
-        return unit_converter._convert_from_base_unit(self, value, column_index)
+    def _convert_from_base_unit(self, value, uncertainty, column_index):
+        return unit_converter._convert_from_base_unit(
+            self, value, uncertainty, column_index
+        )
 
-    def _get_display_value(self, value, column_index):
-        return unit_converter._get_display_value(self, value, column_index)
+    def _get_display_value(self, value, uncertainty, column_index):
+        return unit_converter._get_display_value(self, value, uncertainty, column_index)
 
     # --- UI and File Operations ---
 
@@ -595,6 +602,50 @@ class ThermoelectricApp(QMainWindow):
                 print(f"Error auto-populating weighted mobility: {e}")
 
         self.weighted_mobility_dialog.show()
+
+    def open_hall_mobility_tool(self):
+        """Opens the Hall Mobility & Carrier Transport Plugin Dialog."""
+        self.hall_mobility_dialog = HallMobilityDialog(self)
+
+        # Auto-populate if data exists
+        if not self.data.empty:
+            try:
+                # Column headers in app: 'Temperature', 'Electrical Conductivity'
+                # Base units: Temperature=K, EC=S/m
+                # Dialog expected units: K, S/cm
+                temps = self.data["Temperature"].astype(float).values
+                sigmas = (
+                    self.data["Electrical Conductivity"].astype(float).values * 0.01
+                )  # S/m -> S/cm
+
+                mask = ~np.isnan(temps)
+                self.hall_mobility_dialog.populate_data(temps[mask], sigmas[mask])
+            except Exception as e:
+                print(f"Error auto-populating Hall mobility dialog: {e}")
+
+        self.hall_mobility_dialog.show()
+
+    def open_spb_tool(self):
+        """Opens the Single Parabolic Band (SPB) Modeling & Optimization Tool."""
+        self.spb_dialog = SPBModelingDialog(self)
+
+        # Auto-populate if data exists
+        if not self.data.empty:
+            try:
+                # Column headers in app: 'Temperature', 'Seebeck Coeff.'
+                # Base units: Temperature=K, Seebeck=V/K
+                # Dialog expected units: K, uV/K
+                temps = self.data["Temperature"].astype(float).values
+                seebecks = (
+                    self.data["Seebeck Coeff."].astype(float).values * 1e6
+                )  # V/K -> uV/K
+
+                mask = ~np.isnan(temps)
+                self.spb_dialog.populate_data(temps[mask], seebecks[mask])
+            except Exception as e:
+                print(f"Error auto-populating SPB dialog: {e}")
+
+        self.spb_dialog.show()
 
     def open_device_efficiency_tool(self):
         """Opens the Device-Level Efficiency Calculator."""

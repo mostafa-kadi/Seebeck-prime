@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from PyQt6.QtWidgets import QMessageBox
 from src.ui.widgets.plot_window import PlotWindow
 
@@ -15,73 +16,62 @@ from src.ui.logic.table_handler import (
 import src.ui.logic.weighted_mobility_logic as wm_logic
 import src.ui.logic.unit_converter as unit_converter
 
+# Mapping from logical column index to (value_col_name, uncertainty_col_name)
+_COL_MAP = {
+    COL_TEMP: ("Temperature", None),
+    COL_EC: ("Electrical Conductivity", "±σ"),
+    COL_SEEBECK: ("Seebeck Coeff.", "±S"),
+    COL_PF: ("Power Factor", "±PF"),
+    COL_K_TOTAL: ("Thermal Cond.", "±κ"),
+    COL_K_E: ("Electronic TC", "±κₑ"),
+    COL_K_L: ("Lattice TC", "±κₗ"),
+    COL_ZT: ("ZT", "±ZT"),
+}
 
-def get_table_data(table, y_col_index, error_mode=False):
-    """Gathers data from the table for plotting, including errors if mode is active."""
-    x_data = []
-    y_data = []
-    x_err = []
-    y_err = []
 
-    # Map logical indices to actual table column indices
-    if error_mode:
-        x_idx = 0  # Temperature is always 0 and single
-        x_err_idx = -1
-        # Data columns start at 1 and are paired: 1,2; 3,4; etc.
-        # logical 1 -> actual 1, logical 2 -> actual 3...
-        y_idx = y_col_index * 2 - 1 if y_col_index > 0 else 0
-        y_err_idx = y_idx + 1 if y_col_index > 0 else -1
-    else:
-        x_idx = COL_TEMP
-        x_err_idx = -1
-        y_idx = y_col_index
-        y_err_idx = -1
+def get_table_data(main_window, y_col_index):
+    """Gathers data from the main_window.data DataFrame for plotting, including errors if mode is active."""
+    df = main_window.data
+    error_mode = main_window.error_mode
 
-    for row in range(table.rowCount()):
-        item_x = table.item(row, x_idx)
-        item_y = table.item(row, y_idx)
+    x_col_name = _COL_MAP[COL_TEMP][0]
+    y_col_name, y_unc_col_name = _COL_MAP[y_col_index]
 
-        if item_x and item_y and item_x.text().strip() and item_y.text().strip():
-            try:
-                xv = float(item_x.text())
-                yv = float(item_y.text())
-
-                # Try getting errors
-                xe = 0.0
-                if x_err_idx != -1:
-                    item_xe = table.item(row, x_err_idx)
-                    if item_xe and item_xe.text().strip():
-                        xe = float(item_xe.text())
-
-                ye = 0.0
-                if y_err_idx != -1:
-                    item_ye = table.item(row, y_err_idx)
-                    if item_ye and item_ye.text().strip():
-                        ye = float(item_ye.text())
-
-                x_data.append(xv)
-                y_data.append(yv)
-                x_err.append(xe)
-                y_err.append(ye)
-            except ValueError:
-                continue
-
-    if not x_data:
+    if x_col_name not in df.columns or y_col_name not in df.columns:
         return None, None, None, None
 
-    # Sort data by X for proper line plotting
-    # We zip all 4 to keep them aligned
-    sorted_quads = sorted(zip(x_data, y_data, x_err, y_err))
-    x_data, y_data, x_err, y_err = zip(*sorted_quads)
+    # Extract data
+    x_data_raw = df[x_col_name]
+    y_data_raw = df[y_col_name]
+    x_err_raw = pd.Series([0.0] * len(df))  # Temperature usually has no uncertainty
+    y_err_raw = (
+        df[y_unc_col_name]
+        if error_mode and y_unc_col_name and y_unc_col_name in df.columns
+        else pd.Series([0.0] * len(df))
+    )
+
+    # Combine and filter out rows with NaN in x or y data
+    combined_df = pd.DataFrame(
+        {"x": x_data_raw, "y": y_data_raw, "x_err": x_err_raw, "y_err": y_err_raw}
+    ).dropna(subset=["x", "y"])
+
+    if combined_df.empty:
+        return None, None, None, None
+
+    # Sort by X data
+    combined_df = combined_df.sort_values(by="x")
+
+    x_data = combined_df["x"].tolist()
+    y_data = combined_df["y"].tolist()
+    x_err = combined_df["x_err"].tolist()
+    y_err = combined_df["y_err"].tolist()
 
     return x_data, y_data, x_err, y_err
 
 
 def create_plot(main_window, y_col_index):
     """Creates a plot of the specified column vs. Temperature."""
-    x_data, y_data, x_err, y_err = get_table_data(
-        main_window.table, y_col_index, main_window.error_mode
-    )
+    x_data, y_data, x_err, y_err = get_table_data(main_window, y_col_index)
 
     if x_data is None:
         return
@@ -134,7 +124,7 @@ def plot_all_properties(main_window):
     # Check if we have any data
     has_any_data = False
     for col in properties_to_plot:
-        x_data, _, _, _ = get_table_data(main_window.table, col, main_window.error_mode)
+        x_data, _, _, _ = get_table_data(main_window, col)
         if x_data:
             has_any_data = True
             create_plot(main_window, col)
@@ -173,15 +163,9 @@ def plot_custom_layout(main_window, selection):
 
         if prop_name == "Weighted Mobility":
             # Special handling for on-the-fly calculation
-            t_data, _, _, _ = get_table_data(
-                main_window.table, COL_TEMP, main_window.error_mode
-            )
-            s_data, _, _, _ = get_table_data(
-                main_window.table, COL_SEEBECK, main_window.error_mode
-            )
-            sigma_data, _, _, _ = get_table_data(
-                main_window.table, COL_EC, main_window.error_mode
-            )
+            t_data, _, _, _ = get_table_data(main_window, COL_TEMP)
+            s_data, _, _, _ = get_table_data(main_window, COL_SEEBECK)
+            sigma_data, _, _, _ = get_table_data(main_window, COL_EC)
 
             if t_data and s_data and sigma_data:
                 # We need to ensure we have aligned data (get_table_data sorts by T, so if all rows present, should be fine)
@@ -249,9 +233,7 @@ def plot_custom_layout(main_window, selection):
         if col_idx is None or col_idx == -1:  # -1 Handled above already
             continue
 
-        x_data, y_data, x_err, y_err = get_table_data(
-            main_window.table, col_idx, main_window.error_mode
-        )
+        x_data, y_data, x_err, y_err = get_table_data(main_window, col_idx)
 
         if x_data:
             if main_window.error_mode:

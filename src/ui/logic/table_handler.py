@@ -3,48 +3,20 @@ import numpy as np
 from PyQt6.QtWidgets import QHeaderView, QTableWidgetItem, QMessageBox
 
 # Shared column constants
-COL_TEMP = 0
-COL_EC = 1
-COL_SEEBECK = 2
-COL_PF = 3
-COL_K_TOTAL = 4
-COL_K_E = 5
-COL_K_L = 6
-COL_ZT = 7
-BASE_COLUMN_COUNT = 8
-
-# Column headers for base mode
-COLUMN_HEADERS = [
-    "Temperature",
-    "Electrical Conductivity",
-    "Seebeck Coeff.",
-    "Power Factor",
-    "Thermal Cond.",
-    "Electronic TC",
-    "Lattice TC",
-    "ZT",
-]
-
-# Column headers with error bars (Note: T does not have an error column)
-ERROR_COLUMN_HEADERS = [
-    "Temperature",
-    "Electrical Conductivity",
-    "±σ",  # Keep sigma notation for electrical conductivity only
-    "Seebeck Coeff.",
-    "±u(S)",
-    "Power Factor",
-    "±u(PF)",
-    "Thermal Cond.",
-    "±u(κ)",
-    "Electronic TC",
-    "±u(κₑ)",
-    "Lattice TC",
-    "±u(κₗ)",
-    "ZT",
-    "±u(ZT)",
-]
-
-INPUT_COLUMNS_BASE = [COL_TEMP, COL_EC, COL_SEEBECK, COL_K_TOTAL]
+from src.seebeck_prime.domain.constants import (
+    COL_TEMP,
+    COL_EC,
+    COL_SEEBECK,
+    COL_PF,
+    COL_K_TOTAL,
+    COL_K_E,
+    COL_K_L,
+    COL_ZT,
+    BASE_COLUMN_COUNT,
+    COLUMN_HEADERS,
+    ERROR_COLUMN_HEADERS,
+    INPUT_COLUMNS_BASE,
+)
 
 
 def get_column_headers(error_mode=False):
@@ -100,8 +72,6 @@ def update_headers(app):
         1: "Electrical Conductivity",
         2: "Seebeck Coeff.",
         4: "Thermal Cond.",
-        # Derived ones usually have fixed base units or auto-update?
-        # For this tool, user only selects inputs. Derived cols usually follow base or are fixed.
     }
 
     for col_idx, key in unit_map.items():
@@ -136,16 +106,20 @@ def load_data_into_table(app, df: pd.DataFrame, is_base_units=False):
             if col_name in app.data.columns:
                 val = app.data.iloc[r, c]
                 if pd.notna(val):
-                    # We only convert units for main columns, not error columns
-                    # Error columns usually stay in the same unit or are %
-                    # For simplicity, we'll assume they are in base units/display units same as main
-                    if "±" in col_name:
-                        display_val = f"{val:.4f}"
+                    # We convert units for both main columns and error columns
+                    # Error columns stay in the same unit as their parent main column
+
+                    # Determine logical column index for unit conversion
+                    if app.error_mode:
+                        # Map indices to logical types:
+                        # 0: T, 1: Sigma, 2: Sigma_err, 3: Seebeck, 4: Seebeck_err, 5: PF, 6: PF_err, ...
+                        # Mapping: 0->0, 1->1, 2->1, 3->2, 4->2, 5->3, 6->3, 7->4, 8->4, ...
+                        # Formula: if c==0: 0 else: (c+1)//2
+                        logical_c = 0 if c == 0 else (c + 1) // 2
                     else:
-                        # Find the logical column index for unit conversion
-                        # Note: Now T (0) is single, EC (1,2) is pair...
-                        logical_c = (c + 1) // 2 if (app.error_mode and c > 0) else c
-                        display_val = app._get_display_value(val, logical_c)
+                        logical_c = c
+
+                    display_val = app._get_display_value(val, None, logical_c)
                     item = QTableWidgetItem(str(display_val))
                     app.table.setItem(r, c, item)
 
@@ -166,13 +140,13 @@ def _sync_df_from_table(app):
             if item and item.text().strip():
                 try:
                     display_val = float(item.text().strip())
-                    if "±" in col_name:
-                        val = (
-                            display_val  # No unit conversion for error columns usually
-                        )
+                    # Apply unit conversion to both main and error columns
+                    if app.error_mode:
+                        logical_c = 0 if c == 0 else (c + 1) // 2
                     else:
-                        logical_c = (c + 1) // 2 if (app.error_mode and c > 0) else c
-                        val = app._convert_to_base_unit(display_val, logical_c)
+                        logical_c = c
+
+                    val, _ = app._convert_to_base_unit(display_val, None, logical_c)
                 except ValueError:
                     val = None
             data_dict[col_name].append(val)
@@ -272,7 +246,9 @@ def _convert_df_to_base_units(app, df: pd.DataFrame):
             # Vectorized convert would be nice, but _convert_to_base_unit is scalar
             # We can map it.
             new_df[col_name] = new_df[col_name].apply(
-                lambda x: app._convert_to_base_unit(x, col_idx) if pd.notna(x) else x
+                lambda x: (
+                    app._convert_to_base_unit(x, None, col_idx)[0] if pd.notna(x) else x
+                )
             )
     return new_df
 
