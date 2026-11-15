@@ -13,7 +13,7 @@ For architecture decisions, verified migration tasks, physical equations, and pu
 2. **[Scientific Model Register (`docs/SCIENTIFIC_MODEL_REGISTER.md`)](docs/SCIENTIFIC_MODEL_REGISTER.md)**  
    Definitive scientific catalog covering governing formulas, input/output units, physical assumptions, limitations, and literature citations for core transport ($PF, \kappa_e, \kappa_L, ZT$), carrier models (Hall, weighted mobility, SPB, Pisarenko), and uncertainty propagation.
 3. **[Experimental Benchmark Validation (`docs/EXPERIMENTAL_BENCHMARK_VALIDATION.md`)](docs/EXPERIMENTAL_BENCHMARK_VALIDATION.md)**
-   Validation of the calculation engine **and the complete workflow** against published experimental measurements (Bi₂Te₃-, PbTe- and SiGe-based, digitised from peer-reviewed papers by the StarryData project): power factor and figure of merit for four materials, the Seebeck-derived Lorenz mode, the three instrument importers, multi-sample processing, weighted mobility, the SPB inversion and the desktop workflow end-to-end. The benchmark framework is in [`tests/experimental_benchmarks/`](tests/experimental_benchmarks/).
+   Validation of selected calculation-engine and file-workflow components against published experimental measurements (Bi₂Te₃-, PbTe- and SiGe-based, digitised from peer-reviewed papers by the StarryData project): power factor and figure of merit for four materials, selected Lorenz-number checks, instrument-import and multi-sample checks, and SPB numerical comparisons. Weighted mobility has equation-level regression tests but no usable experimental mobility reference in the current benchmark set; interactive GUI paths remain partly unverified. The benchmark framework is in [`tests/experimental_benchmarks/`](tests/experimental_benchmarks/).
 4. **[Scientific Equation Audit (`docs/SCIENTIFIC_EQUATION_AUDIT.md`)](docs/SCIENTIFIC_EQUATION_AUDIT.md)**
    Equation-by-equation verification of the physical models, dimensional analysis, unit-conversion audit, independent numerical verification, identified errors with severities, and the corrections implemented.
 5. **[Comprehensive Scientific Validation Package (`validation/README.md`)](validation/README.md)**
@@ -174,7 +174,7 @@ Located under the **Analyze** menu:
 Estimates theoretical maximum conversion efficiency $\eta_{\max}$ and cumulative engineering figure of merit $ZT_{\text{eng}}$ across specified cold ($T_c$) and hot ($T_h$) junction temperatures using Snyder et al. integration methods.
 
 ### Weighted Mobility ($\mu_W$)
-Evaluates electronic transport quality independent of carrier concentration using the Snyder relation, allowing direct comparison of intrinsic electronic performance across different doping series.
+Calculates the Snyder et al. (2020) empirical weighted mobility from Seebeck coefficient, electrical resistivity and temperature. It is a density-of-states-weighted transport descriptor, not Hall mobility. The implementation is regression-tested against the published equation, but material-specific experimental validation is unavailable in the current benchmark set.
 
 ---
 
@@ -216,7 +216,7 @@ Honesty boundaries, stated up front (full detail in the validation package):
 - **Every implemented equation has an independently re-derived reference** (`validation/independent_calculations/`, machine-checked for independence) and agrees inside stated tolerances; the per-equation status lives in `validation/SCIENTIFIC_EQUATION_REGISTRY.md` and `validation/remediation/VALIDATION_STATUS.md`.
 - **Numerically verified is not the same as experimentally validated.** The published-measurement benchmark evidence covers **power factor and figure of merit for four specimens** (Bi₂Te₃-, PbTe- and SiGe-based, digitised from peer-reviewed papers via the StarryData project); other quantities are verified as implementations but are **not** validated against independent experiments.
 - **Not implemented** (documented boundaries, not oversights): raw V/I → σ measurement chain, covariance-aware uncertainty propagation, Kane/Dingle/multiband Lorenz models, two-band models.
-- The **weighted-mobility implementation** does not reproduce the equation printed in the scientific model register (documented, unverified physics — model register D-12); the implementation was deliberately left unchanged rather than "corrected" without a primary source.
+- **Weighted mobility** now implements the published Snyder et al. (2020) expression and is covered by independent equation-level regression tests. It remains experimentally unvalidated because the current benchmark set contains no usable matched mobility curve.
 - The golden-output regression baseline is a self-generated snapshot, **not** scientific validation.
 
 ---
