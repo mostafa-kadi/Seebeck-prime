@@ -44,18 +44,21 @@ For architecture decisions, verified migration tasks, physical equations, and pu
 ### Prerequisites & Installation
 See [`docs/SUPPORTED_PYTHON.md`](docs/SUPPORTED_PYTHON.md) for the verified Python-version status. In short: **Python 3.12 or 3.13** (verified locally on 3.13; 3.12/3.13 are the CI targets).
 
-**Option A — install the wheel (recommended):**
-```bash
-pip install seebeck-prime
-```
-This installs the complete runtime dependency set: NumPy, SciPy, pandas, Matplotlib, SciencePlots, PyQt6, openpyxl, qtawesome.
-
-**Option B — from source:**
+**Option A — install from the public source repository:**
 ```bash
 git clone https://github.com/mostafa-kadi/Seebeck-prime.git
 cd Seebeck-prime
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
+python -m pip install .
 ```
+
+**Option B — editable development install:**
+```bash
+python -m pip install -r requirements.txt
+python -m pip install -e .
+```
+
+A PyPI distribution is not documented as a verified release in this repository; use the source-install commands above unless a published PyPI release is confirmed.
 
 > **Windows note:** the PyQt6 combination verified on the development machine is **PyQt6 6.9.1**; the newest PyQt6 (6.12) failed to load `QtWidgets` on that machine's Windows build with a DLL entry-point error (`0xc0000139`). If you see the same error, pin the binding: `pip install PyQt6==6.9.1`.
 
