@@ -288,9 +288,7 @@ factor of 10⁶ or 10⁻⁶. The confirmation is strong but it is a
 
 **Limitation 5.2 — The published carrier-mobility curve for the Bi₂Te₃
 benchmark is negative.** It is physically impossible and therefore cannot
-serve as a reference. The consequence is concrete: **the weighted mobility
-has no experimental validation at all.** The comparison is skipped with the
-reason recorded, not replaced by a substitute value.
+serve as a reference. The consequence is concrete: **weighted mobility has no experimental validation in this repository.** The implementation equation has since been corrected against Snyder et al. (2020), DOI: 10.1002/adma.202001537, and independently regression-tested; this does not replace a matched experimental reference dataset. The comparison is skipped with the reason recorded, not replaced by a substitute value.
 
 **Limitation 5.3 — The published κ and κ_L of the PbTe benchmark are not
 consistent with a single Lorenz number** (implied L = 1.276e-8, spread
@@ -384,8 +382,8 @@ two agreeing implementations are still not ground truth.
 - The **physical models are not validated in general**; for the single
   specimen where the published data can arbitrate, they are *contradicted*
   by ≈35 % in the Lorenz number.
-- **Six interactive GUI paths, the raw measurement chain, the
-  weighted-mobility physics, and three of the seven material families
+- **Six interactive GUI paths, the raw measurement chain, experimental
+  validation of weighted mobility, and three of the seven material families
   remain outside the evidence.**
 - **No metrological traceability** has been established.
 
