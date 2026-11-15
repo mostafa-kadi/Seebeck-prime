@@ -234,9 +234,9 @@ def weighted_mobility_snyder(temperature_k, resistivity_mohm_cm, seebeck_uv_k):
         np.asarray(seebeck_uv_k, dtype=float),
     )
     s = np.abs(seebeck) / K_B_OVER_E_UV
-    logistic_1 = np.exp(-np.logaddexp(0.0, -5.0 * (s - 1.0)))
-    logistic_2 = np.exp(-np.logaddexp(0.0, 5.0 * (s - 1.0)))
     with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        logistic_1 = np.exp(-np.logaddexp(0.0, -5.0 * (s - 1.0)))
+        logistic_2 = np.exp(-np.logaddexp(0.0, 5.0 * (s - 1.0)))
         shape = np.exp(s - 2.0) * logistic_1 + (3.0 / math.pi**2) * s * logistic_2
         result = 331.0 * (1.0 / resistivity) * (temperature / 300.0) ** (-1.5) * shape
     valid = (
