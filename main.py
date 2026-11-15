@@ -43,13 +43,21 @@ from PyQt6.QtWidgets import QApplication
 
 # Import the main application window from its canonical package location
 from seebeck_prime.gui.main_window import ThermoelectricApp
+from seebeck_prime.application.table_files import TableFileService
+from seebeck_prime.infrastructure.io import PandasTabularDataStore
 
 
 def main():
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
 
-    window = ThermoelectricApp()
+    # Composition root: keep concrete persistence adapters outside the GUI.
+    tabular_data_store = PandasTabularDataStore()
+    table_file_service = TableFileService(tabular_data_store)
+    window = ThermoelectricApp(
+        table_file_service=table_file_service,
+        measurement_data_store=tabular_data_store,
+    )
 
     # Center the window on the primary screen
     screen = app.primaryScreen()

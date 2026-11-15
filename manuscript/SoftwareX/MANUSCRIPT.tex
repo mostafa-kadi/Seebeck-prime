@@ -1,0 +1,509 @@
+%% ============================================================================
+%% Seebeck-Prime — SoftwareX Original Software Publication manuscript
+%%
+%% Produced from the OFFICIAL Elsevier SoftwareX OSP template
+%%   (templates/softwarex-osp-template.tex, downloaded unmodified on
+%%   2026-11-12 from https://legacyfileshare.elsevier.com/promis_misc/
+%%   softwarex-osp-template.tex).
+%% The template's "Before you begin" instruction block was deleted as that
+%% block itself instructs ("DELETE THIS SECTION BEFORE SUBMISSION"); its
+%% mandatory requirements are recorded here as comments:
+%%   * We only accept GitHub repositories within Metadata Tables (mandatory;
+%%     README.md and Licence.txt required in the repository).
+%%   * Word limit 4,000 words; max 6 figures; 5 mandatory templated sections.
+%%   * Abstract "ca. 100 words" (guide maximum 250 words).
+%%
+%% Status: final assembly draft — NOT SUBMISSION-READY. Mandatory fields
+%% marked [AUTHOR TO CONFIRM] must be resolved before submission (see
+%% AUTHOR_INPUT_REQUIRED.md, AUTHOR_INFORMATION.md, SOFTWARE_METADATA.md,
+%% REFERENCE_VERIFICATION.md).
+%% ============================================================================
+
+\documentclass[preprint,12pt, a4paper]{elsarticle}
+
+\usepackage{amssymb}
+\usepackage{hyperref}
+\setlength{\parindent}{0pt}
+
+\journal{SoftwareX}
+
+\begin{document}
+
+\renewcommand{\labelenumii}{\arabic{enumi}.\arabic{enumii}}
+
+\begin{frontmatter}
+
+%% ---------------------------------------------------------------------------
+%% Title, authors, addresses
+%% ---------------------------------------------------------------------------
+
+\title{An integrated desktop application for thermoelectric
+transport-property analysis and modelling (Seebeck-Prime:
+reproducible Lorenz-conditioned analysis of thermoelectric data)}
+
+%% [AUTHOR TO CONFIRM: exact title form. The SoftwareX convention is
+%% "Title (SoftwareName: Then a short title)".]
+
+\author{[AUTHOR TO CONFIRM: author name(s)]\corref{cor1}}
+\cortext[cor1]{Corresponding author.}
+\ead{[AUTHOR TO CONFIRM: corresponding author e-mail]}
+\address{[AUTHOR TO CONFIRM: affiliation(s) and address(es)]}
+
+%% ---------------------------------------------------------------------------
+%% Abstract (template guidance: ca. 100 words; guide maximum 250)
+%% ---------------------------------------------------------------------------
+
+\begin{abstract}
+Seebeck-Prime is an open-source desktop application and Python package for
+thermoelectric transport-property analysis. It executes the complete chain from
+measured Seebeck coefficient, electrical conductivity and thermal conductivity
+to power factor, Lorenz-number-conditioned electronic and lattice thermal
+conductivities, figure of merit and device efficiency as one integrated,
+unit-normalised workflow, provided through a Qt interface for interactive use
+and a headless API for reproducible scripting. Implemented models include three
+Lorenz-number descriptions (constant, empirical, and rigorous
+single-parabolic-band), Fermi--Dirac integrals, carrier density and
+effective-mass estimation, Hall analysis, weighted mobility, laser-flash
+thermal conductivity and first-order uncertainty propagation. Calculations are
+verified against independently written reference implementations (relative
+errors $10^{-14}$--$10^{-6}$) and against four published experimental datasets
+(power factor and figure of merit within $1.3$--$5.9\,\%$). The software
+explicitly separates numerical verification from physical validation and
+documents its model assumptions and unverified comparisons.
+\end{abstract}
+
+%% ---------------------------------------------------------------------------
+%% Keywords (guide: 1--7 keywords; draft trimmed from 10 to 7 for compliance)
+%% ---------------------------------------------------------------------------
+
+\begin{keyword}
+thermoelectric materials \sep
+Seebeck coefficient \sep
+power factor \sep
+Lorenz number \sep
+single parabolic band \sep
+Fermi-Dirac integrals \sep
+figure of merit
+\end{keyword}
+
+\end{frontmatter}
+
+%% ============================================================================
+%% REQUIRED METADATA
+%% ============================================================================
+
+\section*{Required Metadata}
+\label{}
+
+\section*{Current code version}
+\label{}
+
+Ancillary data table required for subversion of the codebase. The left column
+is retained verbatim from the template; the right column describes the current
+state of Seebeck-Prime, with unresolved items marked \textbf{[AUTHOR TO
+CONFIRM]}.
+
+\begin{table}[!h]
+\begin{tabular}{|l|p{6.5cm}|p{6.5cm}|}
+\hline
+\textbf{Nr.} & \textbf{Code metadata description} & \textbf{Please fill in this column} \\
+\hline
+C1 & Current code version & 0.1.0 (released 2026-11-13; reconciled across the changelog, package metadata and \texttt{\_\_version\_\_}) \\
+\hline
+C2 & Permanent GitHub link to code/repository used for this code version & \url{https://github.com/mostafa-kadi/Seebeck-prime} \textbf{[AUTHOR TO CONFIRM: repository must be made public before submission]}; the repository contains a documented \texttt{README.md}, \texttt{LICENSE} and \texttt{Licence.txt} \\
+\hline
+C3 & Legal Code License & MIT Licence, \url{https://opensource.org/licenses/MIT}; licence text shipped as \texttt{LICENSE} / \texttt{Licence.txt} in the repository \\
+\hline
+C4 & Code versioning system used & git \\
+\hline
+C5 & Software code languages, tools, and services used & Python (3.12+); NumPy, SciPy, pandas, Matplotlib, scienceplots, PyQt6, qtawesome; pytest \\
+\hline
+C6 & Compilation requirements, operating environments \& dependencies & \texttt{pip install -r requirements.txt}; Windows (primary); Python 3.12/3.13 per \texttt{docs/SUPPORTED\_PYTHON.md} \\
+\hline
+C7 & If available Link to developer documentation/manual & \textbf{[AUTHOR TO CONFIRM: public documentation URL]} --- local documentation exists (\texttt{README.md}, \texttt{docs/}) \\
+\hline
+C8 & Support email for questions & \textbf{[AUTHOR TO CONFIRM]} \\
+\hline
+\end{tabular}
+\caption{Code metadata (mandatory)}
+\label{}
+\end{table}
+
+\textbf{Main text}
+
+Maximum 6 pages in total (excluding metadata, tables, figures, references) with
+a 4000-word limit. The body of this manuscript is within the 4000-word limit.
+
+%% ============================================================================
+%% 1. MOTIVATION AND SIGNIFICANCE
+%% ============================================================================
+
+\section{Motivation and significance}
+\label{sec:motivation}
+
+Thermoelectric transport-property analysis is a chain of interdependent
+quantities. The measured Seebeck coefficient $S$, electrical conductivity
+$\sigma$ and total thermal conductivity $\kappa$ are combined into the power
+factor $PF = S^{2}\sigma$ and the dimensionless figure of merit
+$ZT = PF\,T/\kappa$ \cite{snyder2008,goldsmid2016}. The total thermal
+conductivity is then decomposed into electronic and lattice contributions,
+$\kappa = \kappa_{e} + \kappa_{L}$, which requires a choice of Lorenz number
+$L$ in the Wiedemann--Franz relation $\kappa_{e} = L\sigma T$.
+
+This chain is where preventable error accumulates. The lattice contribution is
+a \emph{difference of two comparable numbers}, so an error in the Lorenz number
+propagates directly and substantially into $\kappa_{L}$ and hence into $ZT$.
+The choice of Lorenz number is also where the physics becomes subtle: the
+constant Sommerfeld value, an empirical relation $L(S)$ \cite{kim2015}, and a
+rigorous single-parabolic-band (SPB) transport-integral model
+\cite{maysnyder2012} each embed different assumptions about scattering and band
+structure, and the differences are largest exactly where the subtraction is
+most sensitive.
+
+In practice, researchers assembling these steps from separate programs,
+spreadsheets or custom scripts face inconsistent unit conventions and implicit
+model choices. Seebeck-Prime was developed so that the chain --- from input,
+through calculation, to derived properties, plots and exports --- is executed,
+unit-normalised and traceable within one application. Its scientific problem
+statement is: \emph{compute the thermoelectric transport chain reproducibly,
+make every Lorenz-number assumption explicit, and refuse silent unit or model
+errors.}
+
+The intended experimental setting (how the user uses the software) is
+twofold. For interactive analysis, the Qt desktop application supports manual
+entry, instrument-file import, batch and multi-sample processing, plotting and
+export. For reproducible work, the same calculations are exposed as a headless
+Python API, and the validation programme itself is expressed as an executable
+benchmark suite against published data \cite{katsura2025}.
+
+Related work: the transport-model background follows the SPB modelling
+conventions of May and Snyder \cite{maysnyder2012}, the Lorenz-number
+estimation context follows Kim et al.\ \cite{kim2015}, and the weighted-mobility
+formulation follows Snyder et al.\ \cite{snyder2020}. Benchmark source data are
+drawn from published thermoelectric measurements digitised in the Starrydata
+project \cite{katsura2025}.
+
+%% ============================================================================
+%% 2. SOFTWARE DESCRIPTION
+%% ============================================================================
+
+\section{Software description}
+\label{sec:software}
+
+\subsection{Software architecture}
+\label{sec:architecture}
+
+Seebeck-Prime follows a layered architecture
+(Fig.~\ref{fig:architecture}):
+
+\begin{itemize}
+  \item \textbf{Presentation:} Qt desktop user interface (\texttt{src/gui}),
+        plotting layers (\texttt{src/presentation}), reusable UI helpers;
+  \item \textbf{Application:} use cases and orchestration
+        (\texttt{src/application}): calculation workflows, validation
+        workflows, file-handling orchestration;
+  \item \textbf{Domain:} scientific models and pure calculation functions
+        (\texttt{src/domain}): transport equations, SPB/Fermi-integral model,
+        Hall, phonon, device efficiency, uncertainty, units, physical
+        constants, validation rules;
+  \item \textbf{Infrastructure:} storage and I/O adapters.
+\end{itemize}
+
+Architectural boundary tests enforce the direction of dependencies (no
+domain$\to$GUI, no infrastructure$\to$GUI), keeping the scientific core free
+of UI concerns.
+
+\begin{figure}[htbp]
+\centering
+\fbox{\parbox[c][3.5cm][c]{0.9\textwidth}{\centering
+\textbf{[Artwork pending]}\\
+Layered-architecture diagram --- see \texttt{FIGURE\_PLAN.md} (Fig.~1).}}
+\caption{Layered architecture of Seebeck-Prime: presentation, application,
+domain and infrastructure layers, with enforced dependency boundaries.}
+\label{fig:architecture}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\fbox{\parbox[c][3.5cm][c]{0.9\textwidth}{\centering
+\textbf{[Screenshot pending --- author must capture]}\\
+Genuine screenshot of the running application ---
+see \texttt{FIGURE\_PLAN.md} (Fig.~2). No screenshot may be fabricated.}}
+\caption{Main window of the Seebeck-Prime desktop application.}
+\label{fig:gui}
+\end{figure}
+
+\subsection{Software functionalities}
+\label{sec:functionalities}
+
+The core headless entry point computes, from temperature, electrical
+conductivity and Seebeck coefficient (and total thermal conductivity), the
+four central transport relations:
+
+\begin{equation}
+PF = S^{2}\,\sigma ,
+\end{equation}
+\begin{equation}
+\kappa_{e} = L\,\sigma\,T ,
+\end{equation}
+\begin{equation}
+\kappa_{L} = \kappa - \kappa_{e} ,
+\end{equation}
+\begin{equation}
+ZT = \frac{PF\,T}{\kappa} .
+\end{equation}
+
+All quantities are handled internally in SI base units and converted for
+display, with unit validation on conversion (a thermal-conductivity
+unit-convention defect, severity SE-042, was identified and remediated during
+the validation programme).
+
+Three Lorenz-number modes are implemented:
+
+\begin{itemize}
+  \item \textbf{Constant:} $L_{0} = (\pi^{2}/3)(k_{B}/e)^{2} =
+        2.443004509\times10^{-8}\ \mathrm{W\,\Omega\,K^{-2}}$; the
+        application-wide default is $2.44\times10^{-8}\
+        \mathrm{W\,\Omega\,K^{-2}}$;
+  \item \textbf{Kim empirical:} $L(S) = (1.5 +
+        e^{-|S|/116})\times10^{-8}\ \mathrm{W\,\Omega\,K^{-2}}$
+        \cite{kim2015};
+  \item \textbf{Rigorous SPB:} $L(\eta)$ via Fermi--Dirac transport
+        integrals \cite{maysnyder2012}.
+\end{itemize}
+
+Further implemented functionality, at the headless level, includes:
+SPB Fermi--Dirac integrals, Seebeck-from-reduced-Fermi-level inversion,
+carrier concentration and effective-mass estimation, and round trips; Hall
+coefficient/density/mobility and scattering-exponent fit; weighted mobility
+\cite{snyder2020}; laser-flash thermal conductivity
+$\kappa = \alpha\,C_{p}\,\rho$, with laboratory inputs converted to SI before
+evaluation; device efficiency; first-order uncertainty propagation of power
+factor, thermal-conductivity components and $ZT$ (input independence is
+assumed); unit conversion; manual and instrument-derived workflows, batch and
+multi-sample processing; GUI, plotting and export.
+
+A lattice-thermal-conductivity diagnostic is wired into the GUI and
+multi-sample reports: when the subtraction $\kappa_{L} = \kappa - \kappa_{e}$
+yields a negative value, the software surfaces a persistent, explicit notice
+(the value itself is never silently clipped), because a negative $\kappa_{L}$
+is physically impossible and almost always indicates a Lorenz-model or input
+inconsistency.
+
+%% ============================================================================
+%% 3. ILLUSTRATIVE EXAMPLES
+%% ============================================================================
+
+\section{Illustrative examples}
+\label{sec:examples}
+
+\subsection{Headless calculation of the transport chain}
+\label{sec:example-headless}
+
+The same equations are available programmatically. The following example uses
+the public headless API (SI units throughout):
+
+\begin{verbatim}
+from seebeck_prime.domain.calculations import (
+    calculate_pf, calculate_kappa_e, calculate_kappa_l, calculate_zt,
+)
+from seebeck_prime.domain.physical_constants import DEFAULT_LORENZ
+
+pf = calculate_pf(seebeck, electrical_conductivity)        # S [V/K], sigma [S/m]
+kappa_e = calculate_kappa_e(electrical_conductivity, temperature,
+                            lorenz=DEFAULT_LORENZ)          # L [W*Ohm/K^2]
+kappa_l = calculate_kappa_l(kappa_total, kappa_e)
+zt = calculate_zt(pf, temperature, kappa_total)
+\end{verbatim}
+
+\noindent
+The functions return $PF$ in W/(m\,K$^{2}$), $\kappa_{e}$ and $\kappa_{L}$ in
+W/(m\,K), and dimensionless $ZT$; the default Lorenz argument is the
+application-wide constant $2.44\times10^{-8}\ \mathrm{W\,\Omega\,K^{-2}}$.
+
+\subsection{Validation against published experimental data}
+\label{sec:example-benchmarks}
+
+The executable benchmark suite compares the calculation engine against four
+published specimens whose raw curves were extracted from the Starrydata
+project \cite{katsura2025} with checksum verification: an n-type
+Bi$_{2}$Te$_{2.4}$Se$_{0.6}$ alloy \cite{huang2019}, a pseudo-ternary
+(PbTe)$_{0.95-x}$(Sb$_{2}$Se$_{3}$)$_{x}$(PbS)$_{0.05}$ specimen
+\cite{zhang2020}, an Sb-doped Si$_{80}$Ge$_{20-x}$Sb$_{x}$ multiphase alloy
+\cite{wang2015}, and the single-phase P-doped Si$_{80}$Ge$_{20}$ reference of
+an SrTiO$_{3}$/SiGe composite study \cite{wang2020srtio3}. Documented
+outcomes:
+
+\begin{itemize}
+  \item Published power factors and $ZT$ are reproduced within approximately
+        $1.3\,\%$--$5.9\,\%$ across the four specimens.
+  \item Published Si$_{80}$Ge$_{20}$P lattice thermal conductivity is
+        reproduced within $0.7\,\%$ using the application Lorenz constant.
+  \item The Lorenz number implied by the published
+        Si$_{80}$Ge$_{20}$P data ($2.46\times10^{-8}\
+        \mathrm{W\,\Omega\,K^{-2}}$) is consistent with the constant
+        ($2.44\times10^{-8}$).
+  \item The acoustic-scattering SPB Lorenz value ($1.59\times10^{-8}$)
+        disagrees by approximately $35\,\%$; investigation showed this to be a
+        scattering-assumption matter (effective scattering exponent
+        $\lambda \approx 1.41$), not an implementation error, and the model was
+        deliberately \emph{not} refitted.
+  \item The PbTe comparison is reported \textbf{unverified} because the
+        published $\kappa/\kappa_{L}$ pair is internally inconsistent (spread
+        $>20\,\%$).
+\end{itemize}
+
+These outcomes are stated with their honest boundaries: tests passing is not
+validation; numerical agreement is not experimental validation; conditional
+physical models are not universal.
+
+%% ============================================================================
+%% 4. IMPACT
+%% ============================================================================
+
+\section{Impact}
+\label{sec:impact}
+
+No user, download or adoption statistics are claimed; the software has not yet
+been publicly released (see \textbf{Current executable software version}). The
+expected impact rests on the demonstrated capability:
+
+\begin{itemize}
+  \item \textbf{Reproducible analysis chain.} Researchers obtain
+        $PF$, $\kappa_{e}$, $\kappa_{L}$, $ZT$ and device efficiencies from
+        measured inputs through one unit-normalised path, in both interactive
+        and scripted form.
+  \item \textbf{Explicit Lorenz-model sensitivity.} Because
+        $\kappa_{L} = \kappa - L\sigma T$ is a difference of comparable
+        numbers, the Lorenz choice is the dominant avoidable error in
+        $\kappa_{L}$ and $ZT$. Seebeck-Prime makes each Lorenz assumption
+        explicit, offers constant/empirical/SPB models side by side, and
+        surfaces physically impossible results (negative $\kappa_{L}$) instead
+        of hiding them. The benchmark finding that a published
+        Si$_{80}$Ge$_{20}$P dataset implies the Sommerfeld value while the
+        acoustic SPB value disagrees by $\sim 35\,\%$ (scattering exponent
+        $\lambda \approx 1.41$) is exactly the kind of model-sensitivity
+        analysis the software is designed to make routine.
+  \item \textbf{Reusable benchmarking.} The checksum-verified benchmark
+        framework against Starrydata-drawn datasets \cite{katsura2025} can be
+        pointed at further published data, including cases where the honest
+        verdict is ``unverified'' (as for the PbTe specimen).
+  \item \textbf{Research questions enabled.} How do Lorenz-model choices and
+        scattering assumptions propagate into reported lattice thermal
+        conductivities and figures of merit across digitised datasets; and how
+        should analysis software communicate model conditionality to users.
+\end{itemize}
+
+%% ============================================================================
+%% 5. LIMITATIONS AND FUTURE WORK
+%% ============================================================================
+
+\section{Limitations and future work}
+\label{sec:limitations}
+
+Documented limitations, stated so that no capability is overstated:
+
+\begin{itemize}
+  \item Automated GUI test coverage is incomplete (the non-modal dialogs lack
+        systematic test coverage).
+  \item A raw voltage/current $\to$ resistance $\to$ resistivity $\to$
+        conductivity chain is \textbf{not implemented}.
+  \item Covariance-aware uncertainty propagation ($\mathbf{J}\,\Sigma\,\mathbf{J}^{T}$)
+        is \textbf{not implemented}; current propagation assumes independent
+        inputs.
+  \item Kane/Dingle/multiband Lorenz models are \textbf{not implemented}.
+  \item The weighted-mobility implementation is \textbf{not experimentally
+        validated}; its behaviour is documented, including documented
+        divergence from an earlier internal formulation.
+  \item The PbTe and weighted-mobility benchmark comparisons remain
+        \textbf{unverified}.
+  \item Public release, licensing finalisation and version reconciliation are
+        pending (release-phase items).
+\end{itemize}
+
+Future work prioritises: a public GitHub release with licence and archival;
+covariance-aware uncertainty propagation; the raw V/I measurement chain as a
+separate modular workflow; and systematic GUI test coverage.
+
+%% ============================================================================
+%% 6. CONCLUSIONS
+%% ============================================================================
+
+\section{Conclusions}
+\label{sec:conclusions}
+
+Seebeck-Prime implements the integrated thermoelectric transport chain ---
+power factor, Lorenz-conditioned electronic and lattice thermal conductivities,
+figure of merit and device efficiency --- with traceable units, explicit
+Lorenz-model alternatives, and a headless API equivalent to the GUI workflow.
+Its calculations are numerically verified against independently written
+reference implementations to relative errors of $10^{-14}$--$10^{-6}$, and its
+benchmarks against four published experimental specimens reproduce published
+power factors and figures of merit within $1.3$--$5.9\,\%$, with the honest
+boundaries (unverified comparisons, unvalidated models, unimplemented
+extensions) documented rather than hidden.
+
+%% ============================================================================
+%% DECLARATIONS
+%% ============================================================================
+
+\section*{Declaration of competing interest}
+\textbf{[AUTHOR TO CONFIRM: competing-interest declaration --- the standard
+form is ``The authors declare that they have no known competing financial
+interests or personal relationships that could have appeared to influence the
+work reported in this paper.'']}
+
+\section*{Acknowledgements}
+\textbf{[AUTHOR TO CONFIRM: acknowledgements, funding, or ``none'']}
+
+%% ---------------------------------------------------------------------------
+%% Generative-AI disclosure (required before the reference list)
+%% ---------------------------------------------------------------------------
+
+\section*{Declaration of generative AI and AI-assisted technologies in the
+writing process}
+\textbf{Statement:} During the preparation of this work the author(s) used
+\textbf{[AUTHOR TO CONFIRM: AI tool name(s)/version(s)]} in order to draft,
+organise and check the internal consistency of the manuscript, based on
+verified repository evidence. After using this tool, the author(s) reviewed
+and edited the content as needed and take(s) full responsibility for the
+content of the published article. See \texttt{AI\_USAGE\_RECORD.md} for the
+complete record.
+
+%% ============================================================================
+%% REFERENCES
+%% ============================================================================
+
+\bibliographystyle{elsarticle-num}
+\bibliography{references}
+
+%% ============================================================================
+%% CURRENT EXECUTABLE SOFTWARE VERSION
+%% ============================================================================
+
+\section*{Current executable software version}
+\label{}
+
+\begin{table}[!h]
+\begin{tabular}{|l|p{10.5cm}|}
+\hline
+\textbf{Item} & \textbf{Value} \\
+\hline
+Permanent link & \url{https://github.com/mostafa-kadi/Seebeck-prime} \textbf{[AUTHOR TO CONFIRM: repository must be made public before submission]} \\
+\hline
+Legal Code License & MIT Licence (\texttt{LICENSE} / \texttt{Licence.txt} in the repository) \\
+\hline
+Current code version & 0.1.0 \\
+\hline
+Current version date & 2026-11-13 \\
+\hline
+Code repository & \url{https://github.com/mostafa-kadi/Seebeck-prime} \textbf{[AUTHOR TO CONFIRM: repository must be made public before submission]} \\
+\hline
+Related research manuscripts & This article. \\
+\hline
+\end{tabular}
+\caption{Current executable software version}
+\label{}
+\end{table}
+
+\end{document}

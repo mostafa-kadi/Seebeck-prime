@@ -1,12 +1,12 @@
 import pytest
 from unittest.mock import Mock
 import numpy as np
-from src.ui.logic.unit_converter import (
+from seebeck_prime.presentation.unit_converter import (
     _convert_to_base_unit,
     _convert_from_base_unit,
     _get_display_value,
 )
-from src.seebeck_prime.domain.constants import (
+from seebeck_prime.application.table_schema import (
     COL_TEMP,
     COL_EC,
     COL_SEEBECK,

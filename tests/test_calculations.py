@@ -1,14 +1,21 @@
 import pytest
 import numpy as np
-from src.seebeck_prime.domain.calculations import (
+import pandas as pd
+from seebeck_prime.domain.calculations import (
     calculate_pf,
     calculate_kappa_e,
     calculate_kappa_l,
     calculate_zt,
     estimate_lorenz,
     calculate_molecular_weight,
+    calculate_legacy_molecular_weight,
+    calculate_dulong_petit_limit,
 )
-from src.seebeck_prime.domain.physical_constants import DEFAULT_LORENZ, ATOMIC_WEIGHTS
+from seebeck_prime.domain.physical_constants import (
+    ATOMIC_WEIGHTS,
+    DEFAULT_LORENZ,
+    LEGACY_GAS_CONSTANT,
+)
 
 
 # --- Fixtures for common test data ---
@@ -135,6 +142,46 @@ def test_calculate_zt_zero_pf_temp():
     assert calculate_zt(1.0, 0, 2.0) == 0.0
 
 
+def test_calculate_zt_mixed_scalar_and_array():
+    """CR-01: scalars and vectors may be combined; NumPy broadcasting applies."""
+    result = calculate_zt(1.0, 300.0, np.array([2.0, 0.0]))
+    assert isinstance(result, np.ndarray)
+    assert np.allclose(result, np.array([150.0, 0.0]))
+
+    result = calculate_zt(np.array([1.0, 2.0]), 300.0, 2.0)
+    assert isinstance(result, np.ndarray)
+    assert np.allclose(result, np.array([150.0, 300.0]))
+
+
+def test_calculate_zt_series_zero_kappa_is_zero():
+    """CR-02: ZT = 0 wherever kappa == 0, also for pandas Series inputs."""
+    index = ["a", "b", "c"]
+    pf = pd.Series([1.0, 1.0, 1.0], index=index)
+    temperature = pd.Series([300.0, 300.0, 300.0], index=index)
+    kappa = pd.Series([2.0, 0.0, 1.0], index=index)
+
+    result = calculate_zt(pf, temperature, kappa)
+
+    assert isinstance(result, pd.Series)
+    assert result.index.tolist() == index
+    assert result.tolist() == pytest.approx([150.0, 0.0, 300.0])
+    assert np.isfinite(result.to_numpy()).all()
+
+
+def test_calculate_zt_series_mixed_with_scalar():
+    """CR-01 + CR-02 together: a Series denominator with zero entries."""
+    result = calculate_zt(1.0, 300.0, pd.Series([2.0, 0.0]))
+
+    assert isinstance(result, pd.Series)
+    assert result.tolist() == pytest.approx([150.0, 0.0])
+
+
+def test_calculate_zt_series_nan_kappa_stays_nan():
+    result = calculate_zt(pd.Series([1.0]), pd.Series([300.0]), pd.Series([np.nan]))
+
+    assert np.isnan(result.iloc[0])
+
+
 # --- Test estimate_lorenz ---
 def test_estimate_lorenz_scalar():
     s_uvk = 100
@@ -183,3 +230,21 @@ def test_calculate_molecular_weight_formula_with_spaces():
     assert calculate_molecular_weight(" Bi2 Te3 ") == pytest.approx(
         (2 * ATOMIC_WEIGHTS["Bi"] + 3 * ATOMIC_WEIGHTS["Te"], 5)
     )
+
+
+# --- Test calculate_legacy_molecular_weight ---
+def test_calculate_legacy_molecular_weight_valid():
+    mass, atoms = calculate_legacy_molecular_weight("NaCl")
+    assert mass == pytest.approx(58.44)
+    assert atoms == 2
+
+
+# --- Test calculate_dulong_petit_limit ---
+def test_calculate_dulong_petit_limit_molar():
+    value = calculate_dulong_petit_limit(5, 800.0, "J/mol·K")
+    assert value == pytest.approx(5 * 3 * LEGACY_GAS_CONSTANT)
+
+
+def test_calculate_dulong_petit_limit_specific():
+    value = calculate_dulong_petit_limit(5, 800.0, "J/kg·K")
+    assert value == pytest.approx((5 * 3 * LEGACY_GAS_CONSTANT) / (800.0 / 1000.0))

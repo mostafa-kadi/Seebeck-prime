@@ -1,0 +1,198 @@
+{
+  "application": {
+    "multi_sample_batch": {
+      "SampleA": {
+        "Electronic TC": [
+          0.732,
+          0.7807999999999999
+        ],
+        "Kappa_total": [
+          2.0,
+          1.5
+        ],
+        "Lattice TC": [
+          1.268,
+          0.7192000000000001
+        ],
+        "PF_mW": [
+          1.0,
+          3.2
+        ],
+        "Power Factor": [
+          0.001,
+          0.0032
+        ],
+        "S_uVK": [
+          100.0,
+          -200.0
+        ],
+        "Seebeck": [
+          0.0001,
+          -0.0002
+        ],
+        "Sigma": [
+          100000.0,
+          80000.0
+        ],
+        "Sigma_Scm": [
+          1000.0,
+          800.0
+        ],
+        "Temperature": [
+          300.0,
+          400.0
+        ],
+        "ZT": [
+          0.15,
+          0.8533333333333334
+        ]
+      }
+    },
+    "thermoelectric_properties_with_uncertainties": {
+      "PF": [
+        0.001,
+        0.000125
+      ],
+      "S": [
+        0.0001,
+        5e-05
+      ],
+      "T": [
+        300.0,
+        400.0
+      ],
+      "ZT": [
+        0.15,
+        0.03333333333333333
+      ],
+      "kappa": [
+        2.0,
+        1.5
+      ],
+      "kappa_L": [
+        1.268,
+        1.012
+      ],
+      "kappa_e": [
+        0.732,
+        0.488
+      ],
+      "sigma": [
+        100000.0,
+        50000.0
+      ],
+      "u_PF": [
+        4.12310562561766e-05,
+        5.153882032022075e-06
+      ],
+      "u_ZT": [
+        0.006368869601428497,
+        0.0014148272371958038
+      ],
+      "u_kappa": [
+        0.02,
+        0.015
+      ],
+      "u_kappa_L": [
+        0.021332388520744695,
+        0.015785642210565904
+      ],
+      "u_kappa_e": [
+        0.007420970286963828,
+        0.004917977226462115
+      ]
+    }
+  },
+  "constants": {
+    "ATOMIC_WEIGHTS_sample": {
+      "Bi": 208.9804,
+      "Pb": 207.2,
+      "Te": 127.6
+    },
+    "DEFAULT_LORENZ": 2.44e-08,
+    "LEGACY_DEFAULT_LORENZ": 2.44e-08
+  },
+  "core_properties": {
+    "kappa_e_array": [
+      0.732,
+      0.488
+    ],
+    "kappa_e_scalar": 0.732,
+    "kappa_l_array": [
+      1.268,
+      1.012
+    ],
+    "kappa_l_scalar": 1.268,
+    "lorenz_estimate_100uVK": 1.9222874796346124e-08,
+    "lorenz_estimate_250uVK": 1.6158832090267522e-08,
+    "pf_array": [
+      0.001,
+      0.000125
+    ],
+    "pf_scalar": 0.001,
+    "zt_array": [
+      0.15,
+      0.03333333333333333
+    ],
+    "zt_scalar": 0.15
+  },
+  "device_efficiency": {
+    "constant_properties_Tc300_Th500": {
+      "Carnot": 0.4,
+      "DeltaT": 200.0,
+      "Efficiency_Eng": 0.07038187266672276,
+      "Efficiency_Max": 0.07038187266672276,
+      "Tc": 300.0,
+      "Th": 500.0,
+      "ZT_avg": 0.8000000000000002,
+      "ZT_eng": 0.8000000000000003
+    }
+  },
+  "hall": {
+    "carrier_type_negative": "n-type",
+    "carrier_type_positive": "p-type",
+    "hall_carrier_density": 6.241509074460763e+21,
+    "hall_coefficient_from_raw": 0.00019999999999999998,
+    "hall_mobility": 100.0
+  },
+  "materials": {
+    "dulong_petit_Bi2Te3_JgK": 74.830163562,
+    "dulong_petit_per_atom": 24.943387854,
+    "legacy_molecular_weight_Bi2Te3": [
+      800.76,
+      5
+    ],
+    "molecular_weight_Bi2Te3": [
+      800.7608,
+      5
+    ],
+    "phonon_dulong_petit_specific_Bi2Te3": 152.81441668718176,
+    "phonon_kappa_from_diffusivity": 2.3400000000000003
+  },
+  "transport_models": {
+    "resistivity_conversions": {
+      "S/cm": 1000.0,
+      "S/m": 100000.0,
+      "\u03a9\u00b7cm": 1.0,
+      "\u03a9\u00b7m": 100000.0
+    },
+    "spb_carrier_concentration_150uVK": 3.1548753542119043e+19,
+    "spb_effective_mass_150uVK_1e19_300K": [
+      0.3966129294518666,
+      1.0191877545422572
+    ],
+    "spb_rigorous_lorenz_eta1_l05": 1.9687582411592718e-08,
+    "spb_seebeck_roundtrip": 187.59030065756522,
+    "weighted_mobility_reference": 46.133517055263376
+  },
+  "uncertainty": {
+    "density_error": 0.024494897427831782,
+    "kappa_e_error": 0.03857978745405423,
+    "kappa_error": 0.17250000000000001,
+    "kappa_l_error": 0.022360679774997897,
+    "pf_error": 0.00011180339887498949,
+    "relative_combined": 5.4772255750516614e-05,
+    "sigma_error": 0.24494897427831783,
+    "zt_error": 0.00804673846971554
+  }
+}

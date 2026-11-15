@@ -6,18 +6,18 @@
 
 ## Authoritative Project Documentation
 
-For architecture decisions, verified migration tasks, physical equations, and publication validation, consult the authoritative documentation in [`docs/`](file:///c:/Users/Elkady/Documents/seebeck_new/Seebeck-Prime/docs):
+For architecture decisions, verified migration tasks, physical equations, and publication validation, consult the authoritative documentation in [`docs/`](docs/) and [`validation/`](validation/):
 
-1. **[System Architecture (`docs/ARCHITECTURE.md`)](file:///c:/Users/Elkady/Documents/seebeck_new/Seebeck-Prime/docs/ARCHITECTURE.md)**  
-   System boundary definitions, live codebase layout, target architecture, Central Data Registry design, and strict architectural constraints (no DFT, no web scrapers, PC-practical).
-2. **[Migration Plan (`docs/MIGRATION_PLAN.md`)](file:///c:/Users/Elkady/Documents/seebeck_new/Seebeck-Prime/docs/MIGRATION_PLAN.md)**  
-   Comprehensive inventory of verified codebase issues, prioritized 6-phase engineering roadmap, and out-of-scope boundaries.
-3. **[Scientific Model Register (`docs/SCIENTIFIC_MODEL_REGISTER.md`)](file:///c:/Users/Elkady/Documents/seebeck_new/Seebeck-Prime/docs/SCIENTIFIC_MODEL_REGISTER.md)**  
+1. **[System Architecture (`docs/ARCHITECTURE.md`)](docs/ARCHITECTURE.md)**  
+   As-built system boundary definitions, codebase layout, architectural constraints (no DFT, no web scrapers, PC-practical), and the remaining target components.
+2. **[Scientific Model Register (`docs/SCIENTIFIC_MODEL_REGISTER.md`)](docs/SCIENTIFIC_MODEL_REGISTER.md)**  
    Definitive scientific catalog covering governing formulas, input/output units, physical assumptions, limitations, and literature citations for core transport ($PF, \kappa_e, \kappa_L, ZT$), carrier models (Hall, weighted mobility, SPB, Pisarenko), and uncertainty propagation.
-4. **[SoftwareX Scientific Validation Report (`docs/SOFTWAREX_VALIDATION_REPORT.md`)](file:///c:/Users/Elkady/Documents/seebeck_new/Seebeck-Prime/docs/SOFTWAREX_VALIDATION_REPORT.md)**  
-   Empirical audit of headless domain decoupling, reconciliation of previous test claims, feature status matrix, and submission readiness roadmap.
-5. **[Documentation Archive (`docs/archive/README.md`)](file:///c:/Users/Elkady/Documents/seebeck_new/Seebeck-Prime/docs/archive/README.md)**  
-   Historical planning drafts, Phase 0 audits, and migration maps preserved for traceability.
+3. **[Experimental Benchmark Validation (`docs/EXPERIMENTAL_BENCHMARK_VALIDATION.md`)](docs/EXPERIMENTAL_BENCHMARK_VALIDATION.md)**
+   Validation of the calculation engine **and the complete workflow** against published experimental measurements (Bi₂Te₃-, PbTe- and SiGe-based, digitised from peer-reviewed papers by the StarryData project): power factor and figure of merit for four materials, the Seebeck-derived Lorenz mode, the three instrument importers, multi-sample processing, weighted mobility, the SPB inversion and the desktop workflow end-to-end. The benchmark framework is in [`tests/experimental_benchmarks/`](tests/experimental_benchmarks/).
+4. **[Scientific Equation Audit (`docs/SCIENTIFIC_EQUATION_AUDIT.md`)](docs/SCIENTIFIC_EQUATION_AUDIT.md)**
+   Equation-by-equation verification of the physical models, dimensional analysis, unit-conversion audit, independent numerical verification, identified errors with severities, and the corrections implemented.
+5. **[Comprehensive Scientific Validation Package (`validation/README.md`)](validation/README.md)**
+   Independent scientific validation of **every** implemented calculation: the equation registry (E-01…E-62), the test plan with justified tolerances, the independently written reference implementations, the measured results (**738 passed / 10 skipped** in the primary environment, **745 / 6** in the Qt-capable environment, **119 / 7** in the benchmark suite, with every skip reasoned), the published-material benchmark landscape, and an explicit statement of what remains unverified. Read `validation/SCIENTIFIC_VALIDATION_LIMITATIONS.md` first.
 
 ---
 
@@ -31,24 +31,54 @@ For architecture decisions, verified migration tasks, physical equations, and pu
     - [Device Efficiency Calculator](#device-efficiency-calculator)
     - [Weighted Mobility](#weighted-mobility)
 - [Plotting & Visualization](#plotting--visualization)
+- [Architecture](#architecture)
+- [Scientific Status & Capability Boundaries](#scientific-status--capability-boundaries)
+- [Licence](#licence)
+- [Citation](#citation)
+- [Support](#support)
 
 ---
 
 ## Getting Started
 
 ### Prerequisites & Installation
-Ensure Python 3.10+ is installed. Clone the repository and install dependencies:
+See [`docs/SUPPORTED_PYTHON.md`](docs/SUPPORTED_PYTHON.md) for the verified Python-version status. In short: **Python 3.12 or 3.13** (verified locally on 3.13; 3.12/3.13 are the CI targets).
+
+**Option A — install the wheel (recommended):**
+```bash
+pip install seebeck-prime
+```
+This installs the complete runtime dependency set: NumPy, SciPy, pandas, Matplotlib, SciencePlots, PyQt6, openpyxl, qtawesome.
+
+**Option B — from source:**
 ```bash
 git clone https://github.com/mostafa-kadi/Seebeck-prime.git
 cd Seebeck-prime
 pip install -r requirements.txt
 ```
 
+> **Windows note:** the PyQt6 combination verified on the development machine is **PyQt6 6.9.1**; the newest PyQt6 (6.12) failed to load `QtWidgets` on that machine's Windows build with a DLL entry-point error (`0xc0000139`). If you see the same error, pin the binding: `pip install PyQt6==6.9.1`.
+
 ### Launch Desktop Application
 To launch the PyQt6 interactive graphical interface:
 ```bash
 python main.py
 ```
+
+### Running the Test Suite
+Run the full test suite (unit tests, architecture-boundary tests, golden-output regression baseline, and startup smoke tests):
+```bash
+python -m pytest -q
+```
+
+Notes:
+- The golden-output baseline (`tests/golden/baseline_outputs.json`) characterizes the current scientific outputs of the domain/application layers. It is a self-generated regression snapshot — **not** scientific validation. Regenerate it deliberately (after an approved scientific change) with:
+  ```bash
+  python scripts/generate_golden_baseline.py
+  ```
+  and review the resulting JSON diff in git.
+- One test (`import main` GUI smoke) is skipped automatically on machines where the PyQt6 widgets library cannot load; it runs in CI and normal environments.
+- A synthetic example dataset and a headless usage script are provided in [`examples/`](examples/README.md) (`example_dataset.csv`, `example_dataset.txt`, `headless_analysis.py`).
 
 ---
 
@@ -105,6 +135,12 @@ Once primary data is entered, the application automatically computes:
 - Select raw measurement units via toolbar dropdowns. The application manages internal conversions to base SI units for all calculations and transforms values back to display units.
 - **Clipboard Support:** Paste experimental columns directly from Excel, OriginLab, or CSV files.
 
+### File Formats (Import / Export)
+- **CSV** (`.csv`) — comma-separated (tab-separated files are also accepted on import).
+- **Plain text** (`.txt`, `.tsv`) — the separator is detected automatically on import (comma, tab, semicolon, or whitespace) and `#` comment lines are ignored; exports are written tab-separated, which imports directly into Origin/Excel.
+- **Excel** (`.xlsx`) — workbooks, including named multi-sheet exports for plots and Multi-Sample batches.
+- Use **File → Open** / **File → Save As** to select the format; the dialog filters list all supported types.
+
 ---
 
 ## Error Propagation & Uncertainty Analysis
@@ -147,3 +183,56 @@ Evaluates electronic transport quality independent of carrier concentration usin
 * **Multi-Property Plotting:** Automatically generates coordinated Matplotlib windows for all key thermoelectric properties vs temperature.
 * **Publication Formatting:** Styled with `scienceplots` for submission-ready vector outputs (PDF, SVG, EPS, PNG).
 * **Error Visualization:** Error bars corresponding to standard uncertainties are automatically overlaid when error mode is active.
+
+---
+
+## Architecture
+
+Seebeck Prime is a **layered modular monolith** with a strictly one-directional dependency rule, enforced by automated architecture tests:
+
+```
+main.py (composition root)
+   └─ gui  →  presentation  →  application  →  domain
+                                     ▲
+infrastructure (pandas adapter) ─────┘   implements the TabularDataStore port
+plugins/  re-exports domain only
+```
+
+- **`domain/`** (13 modules, 2,012 LOC) — pure science: transport calculations, uncertainty propagation, unit vocabulary, SPB / Hall / phonon / device-efficiency models, validation. No GUI, no filesystem access.
+- **`application/`** (11 modules, 1,262 LOC) — use cases, measurement-table processing, table schema, the `TabularDataStore` port, the table-facing unit-conversion front end.
+- **`presentation/`** (23 modules, 4,192 LOC) — table/plot orchestration, notices, and the 9 dialogs (`dialogs/`); owns no scientific calculations (enforced by test).
+- **`gui/`** (4 modules, 652 LOC) — main-window composition only; `main.py` is the single place a concrete persistence adapter is wired.
+- **`infrastructure/`** (2 modules, 84 LOC) — pandas-backed tabular data store.
+- **`plugins/`** (6 modules, 136 LOC) — domain re-exports.
+
+Measured 2026-11-13: **60 modules / 8,359 non-blank LOC**; the import graph is acyclic and every edge points inward (`tests/test_architecture_dependencies.py`, 25 tests; `tests/test_import_root.py`, 7 tests). Details: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/CODE_SKELETON.md`](docs/CODE_SKELETON.md).
+
+---
+
+## Scientific Status & Capability Boundaries
+
+Honesty boundaries, stated up front (full detail in the validation package):
+
+- **Every implemented equation has an independently re-derived reference** (`validation/independent_calculations/`, machine-checked for independence) and agrees inside stated tolerances; the per-equation status lives in `validation/SCIENTIFIC_EQUATION_REGISTRY.md` and `validation/remediation/VALIDATION_STATUS.md`.
+- **Numerically verified is not the same as experimentally validated.** The published-measurement benchmark evidence covers **power factor and figure of merit for four specimens** (Bi₂Te₃-, PbTe- and SiGe-based, digitised from peer-reviewed papers via the StarryData project); other quantities are verified as implementations but are **not** validated against independent experiments.
+- **Not implemented** (documented boundaries, not oversights): raw V/I → σ measurement chain, covariance-aware uncertainty propagation, Kane/Dingle/multiband Lorenz models, two-band models.
+- The **weighted-mobility implementation** does not reproduce the equation printed in the scientific model register (documented, unverified physics — model register D-12); the implementation was deliberately left unchanged rather than "corrected" without a primary source.
+- The golden-output regression baseline is a self-generated snapshot, **not** scientific validation.
+
+---
+
+## Licence
+
+Seebeck Prime is released under the **MIT Licence** — see [`LICENSE`](LICENSE) (also provided as `Licence.txt` for the SoftwareX repository requirement).
+
+---
+
+## Citation
+
+If you use Seebeck Prime in your research, please cite it using the metadata in [`CITATION.cff`](CITATION.cff) (version 0.1.0, 2026-11-13) or the accompanying SoftwareX article. A permanent DOI (Zenodo) will be minted with the public release; until then the repository URL is the canonical reference.
+
+---
+
+## Support
+
+Questions, bug reports and feature requests: please open a GitHub issue at <https://github.com/mostafa-kadi/Seebeck-prime> or contact the corresponding author. Support e-mail to be confirmed at the SoftwareX submission (see `manuscript/SoftwareX/SOFTWARE_METADATA.md`).

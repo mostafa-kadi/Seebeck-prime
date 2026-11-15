@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from src.seebeck_prime.domain.uncertainty import (
+from seebeck_prime.domain.uncertainty import (
     propagate_pf_error,
     propagate_kappa_e_error,
     propagate_kappa_l_error,
@@ -9,7 +9,7 @@ from src.seebeck_prime.domain.uncertainty import (
     propagate_kappa_error,
     propagate_density_error,
 )
-from src.seebeck_prime.domain.physical_constants import DEFAULT_LORENZ
+from seebeck_prime.domain.physical_constants import DEFAULT_LORENZ
 
 
 # --- Test propagate_pf_error ---
@@ -182,7 +182,10 @@ def test_propagate_zt_error_zero_denominator_value():
         np.array([2.0, 0]),
         np.array([0.1, 0.1]),
     )
-    expected_errors = np.array([0.025000000000000005, 0.0])
+    # u(ZT) = ZT * sqrt((u(PF)/PF)^2 + (u(T)/T)^2 + (u(kappa)/kappa)^2)
+    # For the first row: ZT=0.15 and relative variance is
+    # 0.05^2 + (5/300)^2 + 0.05^2.
+    expected_errors = np.array([0.010897247358851685, 0.0])
     for i in range(len(zt_errors)):
         assert zt_errors[i] == pytest.approx(expected_errors[i])
 

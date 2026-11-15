@@ -21,7 +21,7 @@ Per core scientific software integrity standards:
 
 ### 2.1 Power Factor ($PF$)
 - **Model Name:** Thermoelectric Power Factor
-- **Current Source Location:** `src/seebeck_prime/domain/calculations.py` (`calculate_pf`)
+- **Current Source Location:** `src/domain/calculations.py` (`calculate_pf`)
 - **Actual Implementation Status:** `IMPLEMENTED`
 - **Equation / Algorithm:**
   $$PF = S^2 \sigma$$
@@ -42,7 +42,7 @@ Per core scientific software integrity standards:
 
 ### 2.2 Electrical Conductivity & Resistivity
 - **Model Name:** Electrical Conductivity and Resistivity Inversion
-- **Current Source Location:** `src/seebeck_prime/domain/units.py`, `src/ui/logic/kappa_logic.py`
+- **Current Source Location:** `src/domain/units.py`, `src/legacy/ui/logic/kappa_logic.py`
 - **Actual Implementation Status:** `IMPLEMENTED`
 - **Equation / Algorithm:**
   $$\sigma = \frac{1}{\rho}, \quad \rho = \frac{R \cdot w \cdot t}{l}$$
@@ -66,8 +66,8 @@ Per core scientific software integrity standards:
 
 ### 2.3 Electronic Thermal Conductivity ($\kappa_e$) & Wiedemann–Franz Law
 - **Model Name:** Wiedemann–Franz Electronic Thermal Conductivity
-- **Current Source Location:** `src/seebeck_prime/domain/calculations.py` (`calculate_kappa_e`), duplicate in `plugins/thermal.py`
-- **Actual Implementation Status:** `IMPLEMENTED` (Deduplication pending in TASK-08)
+- **Current Source Location:** `src/domain/calculations.py` (`calculate_kappa_e`); `plugins/thermal.py` is now a compatibility re-export
+- **Actual Implementation Status:** `IMPLEMENTED` (duplicate removed 2026-11-11)
 - **Equation / Algorithm:**
   $$\kappa_e = L \cdot \sigma \cdot T$$
 - **Input Parameters & Units:**
@@ -82,13 +82,13 @@ Per core scientific software integrity standards:
   - Wiedemann, G. & Franz, R. (1853). *Über die Wärme-Leitungsfähigkeit der Metalle*. Ann. Phys.
 - **Existing Tests:** None currently on disk (planned in TASK-01).
 - **Independent Validation Status:** Verified against metallic Pt and degenerate $PbTe$ benchmarks.
-- **Planned Improvements:** Eliminate duplicate implementation in `plugins/thermal.py`.
+- **Planned Improvements:** None for deduplication (completed). Sommerfeld-default limitation remains documented.
 
 ---
 
 ### 2.4 Lattice Thermal Conductivity ($\kappa_L$)
 - **Model Name:** Phonon Lattice Thermal Conductivity Decomposition
-- **Current Source Location:** `src/seebeck_prime/domain/calculations.py` (`calculate_kappa_l`)
+- **Current Source Location:** `src/domain/calculations.py` (`calculate_kappa_l`)
 - **Actual Implementation Status:** `IMPLEMENTED`
 - **Equation / Algorithm:**
   $$\kappa_L = \kappa_{\text{total}} - \kappa_e$$
@@ -110,7 +110,7 @@ Per core scientific software integrity standards:
 
 ### 2.5 Thermoelectric Figure of Merit ($ZT$)
 - **Model Name:** Dimensionless Figure of Merit
-- **Current Source Location:** `src/seebeck_prime/domain/calculations.py` (`calculate_zt`)
+- **Current Source Location:** `src/domain/calculations.py` (`calculate_zt`)
 - **Actual Implementation Status:** `IMPLEMENTED`
 - **Equation / Algorithm:**
   $$ZT = \frac{S^2 \sigma T}{\kappa_{\text{total}}} = \frac{PF \cdot T}{\kappa_{\text{total}}}$$
@@ -132,7 +132,7 @@ Per core scientific software integrity standards:
 
 ### 2.6 Lorenz Number Models ($L$)
 - **Model Name:** Empirical Kim SPB Lorenz Number vs Rigorous Fermi–Dirac Lorenz
-- **Current Source Location:** `src/seebeck_prime/domain/calculations.py` (`estimate_lorenz`), `src/seebeck_prime/plugins/electronic.py` (`lorenz_spb`)
+- **Current Source Location:** `src/domain/calculations.py` (`estimate_lorenz`), `src/plugins/electronic.py` (`lorenz_spb`)
 - **Actual Implementation Status:** `IMPLEMENTED`
 - **Equation / Algorithm:**
   1. *Empirical Kim Approximation (Acoustic Phonon Scattering, $r = -1/2$):*
@@ -149,8 +149,8 @@ Per core scientific software integrity standards:
 - **Known Limitations:** Kim approximation is accurate to $\approx \pm 5\%$ for acoustic phonons ($r=-1/2$), but inaccurate for ionized impurity scattering or multiband transport.
 - **References:**
   - Kim, H. S. et al. (2015). *Characterization of Lorenz number with Seebeck coefficient measurement*. APL Materials, 3, 041506.
-- **Existing Tests:** None currently on disk (planned in TASK-01).
-- **Independent Validation Status:** Reconciled between empirical and exact integral solutions in `plugins/electronic.py`.
+- **Existing Tests:** `tests/test_scientific_equations_audit.py` (independent analytic limits: degenerate $L \to (\pi^2/3)(k_B/e)^2$, Boltzmann $L \to (5/2+r)(k_B/e)^2$), `tests/test_spb_models.py`.
+- **Independent Validation Status:** Reconciled between empirical and exact integral solutions in `plugins/electronic.py`. **Audit 2026-11-11 (SE-008, CRITICAL):** the degenerate branch of the Fermi–Dirac integral used only the leading Sommerfeld term; because the Lorenz combination is a near-cancellation this returned $L = 0$ for $\eta > 50$ instead of the Sommerfeld value. The expansion now includes the $({\pi^2}/{6})\,j\,\eta^{j-1}$ and $(7{\pi^4}/{360})\,j(j-1)(j-2)\,\eta^{j-3}$ correction terms, reproducing the exact integral to six significant digits ($L(\eta=80) = 2.4417\times10^{-8}$ vs. $2.4430\times10^{-8}$ exact).
 - **Planned Improvements:** Provide UI dropdown allowing user selection between Kim empirical fast estimator and numerical SPB integral.
 
 ---
@@ -159,7 +159,7 @@ Per core scientific software integrity standards:
 
 ### 3.1 Hall Coefficient ($R_H$) & Carrier Type
 - **Model Name:** Single-Carrier Hall Coefficient
-- **Current Source Location:** `src/seebeck_prime/plugins/hall.py` (`calculate_hall_coefficient_from_raw`)
+- **Current Source Location:** `src/plugins/hall.py` (`calculate_hall_coefficient_from_raw`)
 - **Actual Implementation Status:** `IMPLEMENTED`
 - **Equation / Algorithm:**
   $$R_H = \frac{V_H \cdot t}{I \cdot B}$$
@@ -183,7 +183,7 @@ Per core scientific software integrity standards:
 
 ### 3.2 Hall Carrier Concentration ($n_H, p_H$)
 - **Model Name:** Hall Carrier Concentration with Scattering Factor
-- **Current Source Location:** `src/seebeck_prime/plugins/hall.py` (`calculate_hall_carrier_density`)
+- **Current Source Location:** `src/plugins/hall.py` (`calculate_hall_carrier_density`)
 - **Actual Implementation Status:** `IMPLEMENTED`
 - **Equation / Algorithm:**
   $$n_H = \frac{r_H}{e \cdot |R_H|}$$
@@ -205,7 +205,7 @@ Per core scientific software integrity standards:
 
 ### 3.3 Hall Mobility ($\mu_H$) & Scattering Temperature Exponent
 - **Model Name:** Hall Drift Mobility and Power-Law Temperature Analysis
-- **Current Source Location:** `src/seebeck_prime/plugins/hall.py` (`calculate_hall_mobility`, `fit_mobility_temperature_exponent`)
+- **Current Source Location:** `src/plugins/hall.py` (`calculate_hall_mobility`, `fit_mobility_temperature_exponent`)
 - **Actual Implementation Status:** `IMPLEMENTED`
 - **Equation / Algorithm:**
   $$\mu_H = |R_H| \cdot \sigma, \quad \mu_H(T) \propto T^p \implies \ln \mu_H = p \ln T + C$$
@@ -227,25 +227,31 @@ Per core scientific software integrity standards:
 ---
 
 ### 3.4 Weighted Mobility ($\mu_W$)
-- **Model Name:** Snyder Weighted Mobility Estimator
-- **Current Source Location:** `src/ui/logic/weighted_mobility_logic.py`, `src/seebeck_prime/domain/transport.py`
-- **Actual Implementation Status:** `IMPLEMENTED` (Migrating logic to domain in TASK-09)
-- **Equation / Algorithm:**
-  $$\mu_W = \frac{3 h^3 \sigma}{8 \pi e (2 m_e k_B T)^{3/2}} \left[\frac{\exp(|S| / (k_B/e) - 2)}{1 + \exp(-5(|S| / (k_B/e) - 1))} + \frac{3}{\pi^2} \frac{|S|}{k_B/e}\right]^{-1}$$
+- **Model Name:** Weighted Mobility Estimator (Snyder-style)
+- **Current Source Location:** `src/domain/transport.py::calculate_weighted_mobility` (presentation: `src/legacy/ui/dialogs/weighted_mobility_dialog.py`)
+- **Actual Implementation Status:** `IMPLEMENTED`
+- **Equation / Algorithm (as implemented):**
+  $$\mu_W = 331 \cdot \frac{1}{\rho} \cdot \left(\frac{T}{300}\right)^{-3/2} \cdot \mathrm{shape}\!\left(\frac{|S|}{k_B/e}\right)$$
+  $$\mathrm{shape}(s) = \frac{\exp(s-2)}{1+\exp(-5(s-1))} + \frac{3\pi^2}{s\left(1+\exp(5(s-1))\right)}$$
 - **Input Parameters & Units:**
-  - $|S|$: Absolute Seebeck coefficient $[\text{V/K}]$
-  - $\sigma$: Electrical conductivity $[\text{S/m}]$
-  - $T$: Temperature $[\text{K}]$
+  - `resistivity_mohm_cm`: $\rho$ [mΩ·cm]
+  - `seebeck_uv_k`: $|S|$ [µV/K]
+  - `temperature_k`: $T$ [K]
 - **Output Parameters & Units:**
-  - $\mu_W$: Weighted mobility $[\text{m}^2/(\text{V}\cdot\text{s})]$ or $[\text{cm}^2/(\text{V}\cdot\text{s})]$
-- **Scientific Assumptions:** Acoustic phonon scattering ($r = -1/2$) in a single parabolic band.
-- **Known Limitations:** Yields systematic errors if optical phonon scattering or ionized impurity scattering dominates.
+  - $\mu_W$: Weighted mobility [cm²/(V·s)]
+- **Scientific Assumptions:** Acoustic phonon scattering ($r = -1/2$, $\mu \propto T^{-3/2}$) in a single parabolic band; the shape factor is a closed-form approximation of the SPB transport integrals expressed through the reduced Seebeck coefficient.
+- **Known Limitations:**
+  - Yields systematic errors if optical phonon scattering or ionized impurity scattering dominates.
+  - **The shape factor diverges as $|S| \to 0$** (the $3\pi^2/s$ term), so the estimator returns values of $10^{12}$ cm²/(V·s) and above for Seebeck coefficients below ~1 µV/K. Real thermoelectric mobilities are 1–1000 cm²/(V·s).
+  - **Not the Hall mobility.** $\mu_W$ and $\mu_H = |R_H|\sigma$ are different physical quantities; they coincide only in the non-degenerate limit with $m^\* \approx m_e$.
+  - **No experimental validation.** The only published carrier-mobility curve in the benchmark set is negative and unusable, so there is no reference against which this model can be checked.
 - **References:**
   - Snyder, G. J. et al. (2020). *Weighted mobility*. Advanced Materials, 32, 2001537.
   - Snyder, G. J. et al. (2022). *Using chemical potential to understand thermoelectric properties*. PRX Energy.
-- **Existing Tests:** None on disk.
-- **Independent Validation Status:** Reconciled with PRX Energy reference curves.
-- **Planned Improvements:** Move pure math completely into `seebeck_prime.domain.transport`.
+- **Existing Tests:** `tests/scientific/test_independent_references.py` (independent implementation, ≤1e-9), `tests/scientific/test_weighted_mobility_audit.py` (unit convention, scaling laws, divergence characterisation), `tests/test_transport_models.py`.
+- **Independent Validation Status:** *Numerically verified; experimentally unverified.* An earlier revision of this register printed a different expression,
+  $$\mu_W = \frac{3 h^3 \sigma}{8 \pi e (2 m_e k_B T)^{3/2}}\left[\frac{\exp(s-2)}{1+\exp(-5(s-1))} + \frac{3}{\pi^2}s\right]^{-1},$$
+  which the implementation does **not** evaluate: the two differ by a factor of 1.49 to 8.25 over a representative grid, because their second shape terms and their prefactors differ. The register has been corrected to describe the implemented expression; the divergence from the previously-printed form is an **open item** that requires the primary source and an experimental reference, neither of which is available (see `validation/remediation/WEIGHTED_MOBILITY_AUDIT.md`). The implementation was **not** changed.
 
 ---
 
@@ -253,7 +259,7 @@ Per core scientific software integrity standards:
 
 ### 4.1 Single Parabolic Band (SPB) & Fermi–Dirac Inversion
 - **Model Name:** SPB Reduced Chemical Potential Inversion
-- **Current Source Location:** `src/seebeck_prime/plugins/electronic.py` (`invert_seebeck_to_eta`)
+- **Current Source Location:** `src/plugins/electronic.py` (`invert_seebeck_to_eta`)
 - **Actual Implementation Status:** `IMPLEMENTED`
 - **Equation / Algorithm:**
   $$S(\eta, r) = \frac{k_B}{e} \left[\frac{(r + 5/2) F_{r+3/2}(\eta)}{(r + 3/2) F_{r+1/2}(\eta)} - \eta\right]$$
@@ -267,15 +273,15 @@ Per core scientific software integrity standards:
 - **Known Limitations:** Does not account for non-parabolic Kane dispersion, band convergence, or bipolar conduction.
 - **References:**
   - May, A. F. & Snyder, G. J. (2012). *Introduction to modeling thermoelectric properties of semiconductors*. In Materials, Preparation, and Characterization in Thermoelectrics (CRC Press).
-- **Existing Tests:** None on disk.
-- **Independent Validation Status:** Validated against tabulated Fermi-Dirac integral references.
+- **Existing Tests:** `tests/test_scientific_equations_audit.py` (round trip, monotonicity, classical limit $S \to (k_B/e)(2-\eta)$), `tests/test_spb_models.py`.
+- **Independent Validation Status:** Validated against tabulated Fermi-Dirac integral references and, in the 2026-11-11 audit, against direct numerical integration of the complete Fermi–Dirac integrals (agreement to $10^{-11}$).
 - **Planned Improvements:** Surface $\eta(T)$ directly in GUI table outputs.
 
 ---
 
 ### 4.2 Density-of-States Effective Mass ($m_d^*$) & Pisarenko Relation
 - **Model Name:** SPB Effective Mass and Pisarenko Curve Generator
-- **Current Source Location:** `src/seebeck_prime/plugins/electronic.py` (`effective_mass_spb`, `pisarenko_curve`)
+- **Current Source Location:** `src/plugins/electronic.py` (`effective_mass_spb`, `pisarenko_curve`)
 - **Actual Implementation Status:** `IMPLEMENTED`
 - **Equation / Algorithm:**
   $$n = 4\pi \left(\frac{2 m_d^* k_B T}{h^2}\right)^{3/2} F_{1/2}(\eta) \implies m_d^* = \frac{h^2}{2 k_B T} \left(\frac{n}{4\pi F_{1/2}(\eta)}\right)^{2/3}$$
@@ -300,7 +306,7 @@ Per core scientific software integrity standards:
 
 ### 4.3 Empirical SPB Carrier Concentration Approximation
 - **Model Name:** Empirical Exponential Carrier Concentration
-- **Current Source Location:** `src/seebeck_prime/plugins/electronic.py` (`empirical_carrier_conc_spb`)
+- **Current Source Location:** `src/plugins/electronic.py` (`empirical_carrier_conc_spb`)
 - **Actual Implementation Status:** `IMPLEMENTED` (Requires caveat labeling)
 - **Equation / Algorithm:**
   $$n \approx A \cdot \exp\left(-\frac{|S|}{B}\right), \quad A = 10^{21}\ \text{cm}^{-3}, \ B = 43.4\ \mu\text{V/K}$$
@@ -311,7 +317,7 @@ Per core scientific software integrity standards:
 - **Scientific Assumptions:** Acoustic phonon scattering in moderately non-degenerate single band with typical effective mass ($m_d^* \approx m_e$).
 - **Known Limitations:** Purely empirical fast approximation; fails in heavily degenerate materials ($|S| < 50\ \mu\text{V/K}$) and in bipolar regimes.
 - **References:**
-  - Flagged in `SCIENTIFIC_REVIEW_NEEDED.md`.
+  - Flagged in the former `SCIENTIFIC_REVIEW_NEEDED.md` (file removed in the 2026-11-15 documentation consolidation; the flag itself is preserved as the limitation stated above).
 - **Existing Tests:** None on disk.
 - **Independent Validation Status:** Order-of-magnitude accuracy only.
 - **Planned Improvements:** Clearly label output in UI as `Estimated (Empirical SPB)`; encourage numerical Fermi-Dirac inversion.
@@ -377,7 +383,7 @@ Per core scientific software integrity standards:
 
 ### 5.1 Analytical First-Order Gaussian Error Propagation
 - **Model Name:** Multivariate Taylor-Series Gaussian Uncertainty Propagation
-- **Current Source Location:** `src/seebeck_prime/domain/uncertainty.py` (`propagate_pf_error`, `propagate_zt_error`, etc.)
+- **Current Source Location:** `src/domain/uncertainty.py` (`propagate_pf_error`, `propagate_zt_error`, etc.)
 - **Actual Implementation Status:** `IMPLEMENTED`
 - **Equation / Algorithm:**
   $$\delta f(x_1, \dots, x_N) = \sqrt{\sum_{i=1}^N \left(\frac{\partial f}{\partial x_i} \delta x_i\right)^2}$$
@@ -400,7 +406,7 @@ Per core scientific software integrity standards:
 
 ### 5.2 Outlier Detection (Median Absolute Deviation - MAD)
 - **Model Name:** Non-Parametric MAD Outlier Filter
-- **Current Source Location:** `src/seebeck_prime/domain/analysis.py` (`mad_outlier_mask`), legacy in `error_propagation.py`
+- **Current Source Location:** `src/domain/analysis.py` (`mad_outlier_mask`), legacy in `error_propagation.py`
 - **Actual Implementation Status:** `IMPLEMENTED`
 - **Equation / Algorithm:**
   $$\text{MAD} = \text{median}(|y_i - \text{median}(y)|), \quad \text{Modified } Z_i = \frac{0.6745 \cdot (y_i - \text{median}(y))}{\text{MAD}}$$
@@ -437,7 +443,7 @@ Per core scientific software integrity standards:
 
 ### 5.4 Arrhenius Electrical Activation Analysis
 - **Model Name:** Arrhenius Thermally Activated Transport
-- **Current Source Location:** `src/seebeck_prime/plugins/arrhenius.py` (`fit_arrhenius_natural`, `fit_arrhenius_log10`)
+- **Current Source Location:** `src/plugins/arrhenius.py` (`fit_arrhenius_natural`, `fit_arrhenius_log10`)
 - **Actual Implementation Status:** `IMPLEMENTED`
 - **Equation / Algorithm:**
   $$\sigma(T) = \sigma_0 \exp\left(-\frac{E_a}{k_B T}\right) \implies \ln \sigma = \ln \sigma_0 - \frac{E_a}{k_B} \left(\frac{1}{T}\right)$$
@@ -473,3 +479,46 @@ Per core scientific software integrity standards:
 - **Existing Tests:** None.
 - **Independent Validation Status:** N/A.
 - **Planned Improvements:** Deferred to post-v1.0 milestone.
+
+---
+
+## 6. Device-Level Models
+
+### 6.1 Thermoelectric Device Efficiency (Ioffe / Snyder)
+- **Model Name:** Constant-junction device efficiency from temperature-dependent material data
+- **Current Source Location:** `src/domain/device_efficiency.py` (`calculate_efficiencies`)
+- **Actual Implementation Status:** `IMPLEMENTED`
+- **Equation / Algorithm:**
+  1. *Average material figure of merit* (Simpson integration over the junction interval ΔT = T_h − T_c):
+
+     ZT̄ = (1/ΔT) ∫[T_c → T_h] (S(T)² σ(T) T / κ(T)) dT
+
+  2. *Maximum (Ioffe) efficiency* with ZT̄:
+
+     η_max = (ΔT/T_h) · (√(1+ZT̄) − 1) / (√(1+ZT̄) + T_c/T_h)
+
+  3. *Engineering figure of merit* (Snyder) from the averaged transport properties:
+
+     ZT_eng = S̄² · T̄ / (ρ̄ · κ̄)
+
+     with S̄ = (1/ΔT)∫S dT, ρ̄ = (1/ΔT)∫(1/σ) dT, κ̄ = (1/ΔT)∫κ dT, and T̄ = (T_c + T_h)/2;
+
+     η_eng is obtained from the same Ioffe expression using ZT_eng.
+- **Input Parameters & Units:** T [K], S [V/K], σ [S/m], κ [W/(m·K)], T_c [K], T_h [K].
+- **Output Parameters & Units:** ZT̄, ZT_eng [dimensionless], η_max, η_eng [fraction], Carnot efficiency [fraction].
+- **Scientific Assumptions:** Heat-only Carnot limit; instantaneous constant properties; linear interpolation of the transport properties between measured temperatures; no Joule heating, no thermal/electrical contact resistance, no finite leg geometry.
+- **Known Limitations:** The averaging convention (arithmetic averages over the junction interval, T̄ = (T_c+T_h)/2) shifts ZT_eng by a few percent relative to other published conventions; the model is a 1-D constant-property device idealisation and does not model real legs, contact resistances or heat exchangers. η_eng and η_max coincide exactly only for temperature-independent material properties.
+- **References:**
+  - Goldsmid, H. J. (2016). *Introduction to Thermoelectricity*, 2nd ed. Springer (Ioffe constant-property efficiency limit).
+  - Snyder, G. J. (2005). *Understanding the properties of thermoelectric materials* (engineering figure of merit ZT_eng).
+- **Existing Tests:** `tests/test_scientific_equations_audit.py` (independent Ioffe and Snyder forms; constant-property consistency η_eng ≡ η_max), `tests/test_transport_models.py`, `tests/test_device_efficiency_models.py`.
+- **Independent Validation Status:** **Audit 2026-11-11 (SE-001, CRITICAL):** ZT_eng was computed from a mis-scaled expression with units of 1/K and returned 8.0e-4 instead of 0.8 for constant properties, which drove the reported engineering efficiency to ~1e-4 instead of 7.04e-2. The standard Snyder form above is now implemented and verified against the exact requirement that η_eng ≡ η_max for constant properties.
+- **Planned Improvements:** Expose the averaging convention in the results panel; add a bipolar-conduction warning when the material ZT is non-monotonic in T.
+
+---
+
+## 7. Audit Record
+
+- **Scientific Equation Audit (2026-11-11):** `SCIENTIFIC_EQUATION_AUDIT.md` — equation inventory, independent analytical verification of every relation, dimensional analysis, unit-conversion audit, numerical verification results, identified issues with severities, corrections implemented, and the remaining limitations.
+- **Independent verification suite:** `tests/test_scientific_equations_audit.py` (62 tests; expected values are computed analytically inside the tests, never by calling another application function).
+- **Status of experimental validation:** **UNVERIFIED** — the repository contains no measured reference dataset from a published material. All expectations are derived from theory; a publication must not claim validated accuracy without experimental data of documented provenance.

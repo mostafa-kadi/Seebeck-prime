@@ -1,0 +1,151 @@
+# Architecture Migration — Phase 4 Report
+
+**Status:** COMPLETE — `src/legacy/` deleted, architecture rules tightened, both
+test suites and the benchmark suite green.
+**Authorization:** User approved Phase 4 after the Phase 3 report
+(map rows 20, 24 and the row-25 packaging check of
+`docs/ARCHITECTURE_PHASE2_MIGRATION_MAP.md`).
+**Rollback:** local backups at
+`C:\Users\Elkady\Documents\seebeck_new\Seebeck-Prime_backup_2026-11-13.zip`
+(working tree) and `Seebeck-Prime_history_2026-11-13.bundle` (git history);
+nothing has been committed.
+
+---
+
+## 1. What was executed
+
+| Map row | Work | Result |
+|---------|------|--------|
+| 20 | **DELETE whole `src/legacy/` tree** (9 `.py` files: `__init__.py`, `core/{__init__,analyzer,calculations,constants}.py`, empty `ui/{,dialogs,logic,widgets}/__init__.py`) | DONE |
+| — | Retire `tests/test_legacy_calculations_compatibility.py` (3 tests; their numerical content already lives in `tests/test_canonical_calculations_surface.py` since Phase 3) | DONE |
+| 24 | Tighten `tests/test_architecture_dependencies.py`: the per-layer `legacy.ui`/`legacy.core` exceptions became a single `seebeck_prime.legacy` prohibition in **every** layer tuple, plus a new whole-tree scan test | DONE |
+| — | `tests/test_import_root.py`: `"legacy"` removed from the layer list; new guard test asserts `seebeck_prime.legacy` raises `ImportError` | DONE |
+| 25 | Packaging check: `setup.py` package walk re-verified after deletion | DONE |
+
+## 2. Architecture rules after Phase 4
+
+`tests/test_architecture_dependencies.py`:
+
+- Every per-layer forbidden-import tuple (domain, application, infrastructure,
+  presentation, gui) now contains the single entry `"seebeck_prime.legacy"` —
+  which `startswith`-covers the whole retired tree, including any future
+  submodule (previously the tuples named only `legacy.ui` / `legacy.core`).
+- New test `test_no_package_imports_the_retired_legacy_tree` — AST-scans
+  **every** `.py` file under `src/` (all layers at once) and fails on any
+  import of `seebeck_prime.legacy` or a submodule. This is the row-24 rule:
+  no layer may import the retired tree.
+- The pre-existing per-file negative assertions (e.g. "multi_sample_dialog
+  must not import legacy.core") remain; all still true and consistent with
+  the tightened rule.
+
+`tests/test_import_root.py`:
+
+- `test_package_import_resolves_to_the_shim_and_exposes_the_layers` no longer
+  lists `legacy` (the import would now fail).
+- New test `test_the_retired_legacy_tree_is_no_longer_importable` — asserts
+  `importlib.import_module("seebeck_prime.legacy")` raises `ImportError`, so
+  the tree cannot silently return.
+
+## 3. Packaging check (row 25)
+
+The `setup.py` walk was re-executed (function extracted via AST, not imported,
+because `setup()` runs at module level). Result:
+
+- **8 packages** discovered: `seebeck_prime`, `.application`, `.domain`,
+  `.gui`, `.infrastructure`, `.plugins`, `.presentation`,
+  `.presentation.dialogs`.
+- **No `legacy` package** remains; every discovered package has an
+  `__init__.py` (regular packages only); `presentation.dialogs` is still
+  auto-included, as verified in Phase 3.
+- `import seebeck_prime` and `import seebeck_prime.presentation.dialogs`
+  resolve to the shim layout as before.
+
+## 4. Validation-record consistency update (required by the suite)
+
+Deleting the tree made two rows of the *scientific validation records* name
+paths that no longer exist, and the enforced consistency tests
+(`tests/scientific/test_equation_status_mapping.py`) correctly failed until
+the records were made truthful again. Updated (no validation status, category,
+or count was changed — counts remain 31 / 23 / 5 / 3 of 62):
+
+- `tools/generate_equation_status_mapping.py`:
+  - **E-56** implementation path `src/legacy/ui/dialogs/` →
+    `src/presentation/dialogs/` (same 6 dialogs); the limitation note's
+    `main_window.py` line references refreshed (ErrorBarDialog 225 → 292,
+    PlotDataDialog 688 → 779 — they had drifted during the earlier phases).
+  - **E-59 … E-62** (the four legacy/compatibility-surface entries) marked
+    **RETIRED (2026-11-13)**: implementation/test fields are now
+    parenthesized notes (the CSV's designed "note" form, which the path
+    checker skips) stating what was verified about the shims before deletion
+    and where the content lives now (`domain/calculations.py`,
+    `domain/physical_constants.py`, `application/use_cases.py`,
+    `presentation/*`); E-61's live test `tests/test_batch_workflows.py`
+    remains a real path-checked entry.
+  - Section label "11 Legacy / compatibility surfaces" →
+    "11 Retired legacy / compatibility surfaces".
+  - The `OVERRIDES` texts (what actually lands in the CSV) gained explicit
+    "(historical verification of the retired …)" qualifiers; all statuses stay
+    `VERIFIED (historical)` / `UNCONDITIONAL` / category 1.
+- `validation/remediation/EQUATION_STATUS_MAPPING.csv` regenerated by the
+  generator (62 rows; the generator-reproducibility test passes).
+- `validation/SCIENTIFIC_EQUATION_REGISTRY.md`: section 11 rewritten to the
+  retired wording with canonical pointers; E-56 line references refreshed.
+- `validation/remediation/VALIDATION_STATUS.md`: section-group label, the four
+  category-1 table rows, and the E-59…E-62 narrative updated to past tense
+  ("delegation only, now retired").
+
+**Integrity note:** this update records a change the migration itself made;
+it does not alter any validated claim. The historical pure-delegation
+verifications remain attributed to the surfaces they actually verified, and
+the numerical assertions now run directly against the canonical surfaces via
+`tests/test_canonical_calculations_surface.py` (created in Phase 3 with every
+assertion preserved unchanged).
+
+## 5. Docstring/comment refresh
+
+- `src/seebeck_prime/__init__.py` — sibling-directory list no longer names
+  `src/legacy`.
+- `src/presentation/dialogs/__init__.py` — now states the legacy tree was
+  deleted entirely (Phase 4).
+- `setup.py` — module docstring and the nested-package comment example
+  (`presentation.dialogs`) updated.
+- `tests/test_canonical_calculations_surface.py` — docstring states the shim
+  "was retired (Phase 4)".
+
+## 6. Verification matrix
+
+| Suite | Pre-Phase 4 | Post-Phase 4 |
+|-------|-------------|--------------|
+| conda (`anaconda3\python.exe -m pytest -q`) | 739 passed / 10 skipped | **738 passed / 10 skipped, exit 0** |
+| Qt venv (`seebeck-gui2`) | 746 passed / 6 skipped | **745 passed / 6 skipped, exit 0** |
+| benchmark suite (`pytest tests/experimental_benchmarks -q`) | 119 / 7 | **119 / 7, exit 0** |
+
+Delta arithmetic (both environments): −3 (retired shim compatibility test) + 2
+(new guard tests) = −1 → 738 / 745. Matches exactly.
+
+## 7. Tree state after Phase 4
+
+- `src/` now holds **60 `.py` files** (69 − 9 legacy files). The `src/legacy/`
+  directory no longer exists.
+- The import root (`src/seebeck_prime/__init__.py` shim), the layer layout,
+  and the wheel package walk are unchanged apart from the retired tree.
+- No `src/` module ever imported `seebeck_prime.legacy` after Phase 3
+  (verified before deletion; re-verified by the new whole-tree scan test).
+
+## 8. Notes for Phase 6 (documentation refresh queue)
+
+- `docs/ARCHITECTURE.md`, `docs/CODE_SKELETON.md` still describe the
+  pre-migration layout (including `src/legacy`); CR-08 resolution belongs in
+  `docs/CODE_PROBLEMS_REGISTER.md`.
+- `VALIDATION_STATUS.md`'s D-01 paragraph cites `main_window.py:291-301` for
+  the κ_L write, which now points at the error-bar toggle (the reference
+  drifted during the earlier phases; the substantive D-01 claim — the
+  negative-κ_L diagnostic has no production caller — was re-verified true
+  today).
+- No application/scientific source changed in Phase 4; only deletions of the
+  retired tree, test-rule tightening, and record-consistency updates.
+
+## 9. Next step
+
+**Phase 5** per the migration plan: run the complete scientific /
+application / GUI suites in both environments and report. Phase 4 stops here.

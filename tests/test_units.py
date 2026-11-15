@@ -1,5 +1,5 @@
 import pytest
-from src.seebeck_prime.domain.units import (
+from seebeck_prime.domain.units import (
     celsius_to_kelvin,
     kelvin_to_celsius,
     to_kelvin,

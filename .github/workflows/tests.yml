@@ -1,0 +1,59 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+    env:
+      QT_QPA_PLATFORM: offscreen
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run test suite
+        run: pytest -q
+
+  # CR-07 / ENV-04: ruff and mypy must run alongside the test suite.
+  # Both gates are *baseline* gates on the documented current state
+  # (docs/CODE_PROBLEMS_REGISTER.md §11): ruff S-rules 2 findings, mypy
+  # 9 errors / 3 files (CR-14). CI fails on any NEW finding; tighten the
+  # baselines as the register items are fixed.
+  static:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install tooling and package (editable)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+      - name: Ruff security rules (baseline gate: 2)
+        run: |
+          count=$(ruff check src --select S --output-format json \
+            | python -c "import json,sys; print(len(json.load(sys.stdin)))")
+          echo "ruff S findings: $count (baseline 2)"
+          test "$count" -le 2
+      - name: Mypy (baseline gate: 9 errors, CR-14)
+        run: |
+          output=$(mypy src --ignore-missing-imports --show-error-codes || true)
+          count=$(echo "$output" | grep -c "error:" || true)
+          echo "mypy errors: $count (baseline 9)"
+          test "$count" -le 9

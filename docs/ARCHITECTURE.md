@@ -1,8 +1,8 @@
 # Seebeck Prime — System Architecture
 
-**Document Version:** 1.0.0  
-**Status:** Authoritative Architecture Reference  
-**Last Updated:** October 2026  
+**Document Version:** 1.1.0  
+**Status:** Architecture reference — **as-built** (migration complete 2026-11-13; remaining target components listed in §3.2)  
+**Last Updated:** 2026-11-13
 
 ---
 
@@ -19,125 +19,111 @@
 
 ---
 
-## 2. Current Architecture (As Discovered)
+## 2. Current Architecture (As Built)
 
-An exhaustive code inspection reveals a transitional codebase with an active legacy UI engine and a partially connected parallel domain package.
+The Layered Modular Monolith migration is **complete** (Phases 3–5 finished
+2026-11-13; see `docs/ARCHITECTURE_PHASE*_REPORT.md`). `main.py` is the
+composition root; `seebeck_prime` contains exactly Domain, Application,
+Infrastructure, Presentation, and GUI packages plus the plugins re-export
+package. The retired `src/legacy/` tree (and the earlier `src/core` / `src/ui`
+/ `src/plot` shadow layouts) no longer exist.
 
 ### 2.1 Codebase Layout & Entry Points
+
 ```text
 Seebeck-Prime/
-├── main.py                          # Live runtime entry point
-├── requirements.txt                 # Dependencies (PyQt6, pandas, numpy, scipy, matplotlib, etc.)
-├── pyproject.toml / setup.py        # Build & packaging configurations
-├── docs/                            # Authoritative documentation suite
-│   ├── ARCHITECTURE.md              # (This document) System architecture
-│   ├── MIGRATION_PLAN.md            # Verified issues & refactoring tasks
-│   ├── SCIENTIFIC_MODEL_REGISTER.md # Comprehensive scientific inventory
-│   ├── SOFTWAREX_VALIDATION_REPORT.md# SoftwareX readiness & test audit
-│   └── archive/                     # Preserved legacy planning documents
-└── src/
-    ├── core/                        # Legacy scientific & analysis core
-    │   ├── calculations.py          # Basic transport formulas (0 bytes; .pyc active)
-    │   ├── analyzer.py              # Single/multi-sample processing (0 bytes; .pyc active)
-    │   ├── constants.py             # Physical constants (source deleted; .pyc active)
-    │   └── error_propagation.py     # Gaussian error propagation (source deleted; .pyc active)
-    ├── ui/                          # Active PyQt6 GUI implementation
-    │   ├── main_window.py           # Legacy main window (source deleted; .pyc active)
-    │   ├── dialogs/                 # Modal tool dialogs (kappa, spb, hall, efficiency, error)
-    │   ├── logic/                   # UI business logic (kappa, table, unit converter)
-    │   └── widgets/                 # Reusable Qt widgets (plot_window.py; table_widget.pyc)
-    └── seebeck_prime/               # Parallel domain architecture (Phase 1-2 extraction)
-        ├── domain/                  # GUI-independent domain math, units, and models
-        │   ├── constants.py         # Authoritative physical constants (CODATA 2018)
-        │   ├── calculations.py      # Core formulas (PF, ke, kL, ZT, Kim Lorenz)
-        │   ├── dataset.py           # ThermoelectricDataset container
-        │   ├── quantities.py        # ScalarQuantity & provenance tags
-        │   ├── units.py             # Pure-function unit conversion system
-        │   ├── validation.py        # Numerical and physical range validation
-        │   ├── analysis.py          # Regression, interpolation, MAD filtering
-        │   └── uncertainty.py       # Analytical Gaussian error propagation
-        ├── plugins/                 # Modular transport models
-        │   ├── electronic.py        # Single Parabolic Band (SPB) & Pisarenko engine
-        │   ├── hall.py              # Hall coefficient, carrier concentration, mobility
-        │   ├── arrhenius.py         # Arrhenius thermal activation analysis
-        │   ├── thermal.py           # Wiedemann-Franz thermal decomposition (duplicate)
-        │   └── phonon.py            # Dulong-Petit heat capacity & laser flash kappa
-        ├── application/             # Application services & use cases
-        │   ├── services.py          # ThermoelectricAnalyzer orchestration service
-        │   └── use_cases.py         # High-level transport calculation pipeline
-        ├── gui/                     # Proposed modern UI refactor
-        │   ├── main_window.py       # Refactored main window (boundary violations present)
-        │   ├── dialogs.py           # Consolidated dialog interface
-        │   ├── plugin_panels.py     # Modular tool docking panels
-        │   └── table.py             # Domain-bound table view
-        ├── plot/                    # Matplotlib plotting adapters
-        │   ├── plotter.py           # Automated plotting engine
-        │   └── plot_config.py       # Theme & scienceplots configuration
-        └── infrastructure/          # File I/O and data persistence
-            └── io.py                # File reading/writing utilities
+├── main.py                         # Runtime entry point and composition root
+├── pyproject.toml / setup.py       # Build and packaging configuration
+├── docs/                           # Audit, architecture, scientific, and maintenance records
+├── validation/                     # Scientific equation registry, remediation records
+├── tests/                          # Unit, workflow, scientific, and architecture tests
+└── src/                            # 60 modules / 8,359 non-blank LOC (measured 2026-11-13)
+    ├── seebeck_prime/__init__.py   # Import-root shim (extends __path__ to src/)
+    ├── domain/          (13 modules, 2,012 LOC)   # Pure science: calculations, uncertainty,
+    │                                              #  units, SPB, Hall, phonon, transport,
+    │                                              #  device efficiency, analysis, validation, constants
+    ├── application/     (11 modules, 1,262 LOC)   # Use cases, ports, services, table_schema,
+    │                                              #  mapping, batch/file workflows, unit_conversion
+    ├── infrastructure/  ( 2 modules,    84 LOC)   # Pandas-backed TabularDataStore adapter
+    ├── presentation/    (23 modules, 4,192 LOC)   # Table/plot orchestration, UI helpers,
+    │   └── dialogs/  ( 9 dialogs + __init__)      #  KappaTool, MultiSample, WeightedMobility,
+    │                                              #  HallMobility, SPBModeling, DeviceEfficiency,
+    │                                              #  ErrorBar, PlotSettings, ProcessedData
+    ├── gui/             ( 4 modules,   652 LOC)   # Main window (28 methods), file commands,
+    │                                              #  back-compat table re-export shim
+    └── plugins/         ( 6 modules,   136 LOC)   # Domain re-exports only
 ```
 
+The active window is `src/gui/main_window.py`. It imports its dialogs from
+`seebeck_prime.presentation.dialogs.*` — no legacy namespace imports remain
+anywhere in `src/`.
+
 ### 2.2 Runtime Decoupling Status
-1. **Application Execution Path:**  
-   The primary entry point `main.py` explicitly executes:
-   ```python
-   from src.ui.main_window import ThermoelectricApp
-   ```
-   However, `src/ui/main_window.py`, `src/ui/widgets/table_widget.py`, `src/core/constants.py`, and `src/core/error_propagation.py` were removed from source tracking and exist only as compiled CPython bytecode (`__pycache__/*.pyc`).
-2. **Parallel Domain Layer (`src/seebeck_prime/`):**  
-   A clean, headless domain package was established under `src/seebeck_prime/domain/`. Its modules (`constants.py`, `calculations.py`, `units.py`, `uncertainty.py`, `plugins/electronic.py`, `plugins/hall.py`) operate without any GUI dependencies.
-3. **Architectural Gap:**  
-   The active application UI has not yet been fully rewired to consume `src/seebeck_prime/domain/`. Instead, `src/seebeck_prime/gui/` contains reverse imports pointing back into legacy `src/ui/*` modules, creating cyclic boundaries.
-4. **Test Infrastructure:**  
-   No unit test suite currently exists in the workspace. While `.pytest_cache/` is present, all actual test files (`tests/`) are missing from disk.
+
+1. **Application Entry Point:** `main.py` imports `seebeck_prime.gui.main_window.ThermoelectricApp` and wires the tabular-data service and storage adapter. It is the only place a concrete persistence adapter is instantiated.
+2. **Layer Boundaries:** **25 tests** in `tests/test_architecture_dependencies.py` enforce the full inward rule (domain → application → presentation → gui), ban the retired legacy tree across the whole `src/` tree, forbid infrastructure GUI/file-dialog dependencies, and require dialogs to delegate science to application use cases. **7 tests** in `tests/test_import_root.py` enforce the single canonical import root. No sanctioned exceptions remain; the measured import graph is acyclic (`test_internal_package_import_graph_has_no_cycles`).
+3. **Presentation Consolidation:** **Complete.** Main-table interaction, plotting, unit display conversion, menu/toolbar construction, Kappa orchestration, and all 9 live dialogs now live in canonical Presentation modules (`presentation/dialogs/`). `gui/table.py` remains as a deliberate back-compat re-export shim whose single-implementation rule is enforced by test.
+4. **Scientific Ownership:** Every calculation entry point delegates through Application to Domain; no duplicated science exists in Presentation or GUI (enforced by test). The Lorenz number is **unified**: `DEFAULT_LORENZ = LEGACY_DEFAULT_LORENZ = 2.44e-8 W·Ω·K⁻²` in `domain/physical_constants.py` (the full-precision Sommerfeld value is retained as `SOMMERFELD_LORENZ_EXACT`); the CR-01/CR-02 `calculate_zt` fixes are in place.
+5. **Verification:** Phase 5 full suites (2026-11-13, all exit 0): conda environment **738 passed / 10 skipped**, Qt environment **745 passed / 6 skipped**, benchmark suite **119 passed / 7 skipped**. Architecture + import-root + canonical-surface tests: **35 passed**. Static checks: `compileall` clean; mypy 9 errors / 3 files (exact CR-14 baseline); ruff security rules 2 findings (baseline). Qt GUI suites run in the dedicated PyQt6 6.9.1 venv.
 
 ---
 
-## 3. Target Architecture
+## 3. As-Built Architecture (final diagram)
 
-The target architecture establishes a clean, maintainable separation of concerns that reuses existing working code without requiring a total rewrite.
+The as-built diagram shows the actual dependency structure, measured and
+enforced by `tests/test_architecture_dependencies.py`. Composition flows
+downward; every arrow points inward.
 
 ```mermaid
 graph TD
-    UI[Presentation Layer: PyQt6 GUI / CLI] --> APP[Application Layer: Use Cases & Services]
-    APP --> REGISTRY[Central Data Registry / Context]
-    APP --> ENGINE[Dependency-Aware Calculation Engine]
-    ENGINE --> DOMAIN[Domain Scientific Layer]
-    DOMAIN --> CORE_CALC[Core Transport: PF, ZT, ke, kL]
-    DOMAIN --> MODELS[Scientific Models: SPB, Hall, Arrhenius]
+    MAIN[main.py — composition root: wires adapter + service into ThermoelectricApp]
+    MAIN --> GUI[GUI Layer: gui/ main window + file commands]
+    GUI --> PRES[Presentation Layer: table/plot orchestration, notices, dialogs/ ×9]
+    PRES --> APP[Application Layer: use cases, services, schema, unit conversion, ports]
+    APP --> DOMAIN[Domain Scientific Layer]
+    DOMAIN --> CORE_CALC[Core Transport: PF, ZT, κe, κL, Lorenz]
+    DOMAIN --> MODELS[Scientific Models: SPB, Hall, Phonon, Device Efficiency]
     DOMAIN --> UNITS[Pure Unit Conversion Engine]
     DOMAIN --> UNCERTAINTY[Uncertainty & Error Propagation]
-    APP --> VIS[Visualization Layer: Matplotlib & SciencePlots]
-    APP --> INFRA[Infrastructure Layer: File I/O & Serializers]
+    INFRA[Infrastructure: PandasTabularDataStore] -. implements port structurally .-> APP
+    PLUGINS[plugins/ ×6 re-export modules] --> DOMAIN
 ```
 
-### 3.1 Target Components & Responsibilities
+`main.py` also wires `TableFileService(store)` — the only instantiation of a
+concrete persistence adapter in the codebase.
 
-1. **Domain Scientific Layer (`seebeck_prime.domain`):**
-   - Pure Python / NumPy / SciPy scientific functions.
-   - Zero GUI dependencies (no PyQt6, no Qt event loops).
-   - Authoritative CODATA 2018 constants.
+### 3.1 As-Built Components & Responsibilities
+
+1. **Domain Scientific Layer (`seebeck_prime.domain`, 13 modules):** ✅ built
+   - Pure Python / NumPy / SciPy scientific functions; zero GUI dependencies; no filesystem access.
+   - Authoritative constants (`BOLTZMANN`, `ELECTRON_CHARGE`, …, unified `DEFAULT_LORENZ`).
    - Explicit inputs, outputs, and scientific pre/post-conditions.
-2. **Unit Conversion & Validation (`seebeck_prime.domain.units`, `validation`):**
-   - Independent pure-function conversion engine.
+2. **Unit Conversion & Validation (`seebeck_prime.domain.units`, `domain.validation`):** ✅ built
+   - Independent pure-function conversion engine — the single unit vocabulary for the whole application.
    - Temperature offset-aware ($^\circ\text{C} \leftrightarrow \text{K}$).
    - Strict dimensionality validation before calculation execution.
-3. **Central Data Registry (`seebeck_prime.domain.dataset` / `context`):**
+3. **Application Layer (`seebeck_prime.application`, 11 modules):** ✅ built
+   - Orchestrates multi-step workflows (sample file loading → unit normalization → transport calculation → uncertainty propagation).
+   - Coordinates single-sample and multi-sample comparisons; defines the `TabularDataStore` port.
+4. **User Interface (`seebeck_prime.presentation` + `seebeck_prime.gui`):** ✅ built
+   - PyQt6 views, tables, plot windows, and the 9 dialogs in `presentation/dialogs/`.
+   - Dispatches user events to application services; owns no science (enforced by test).
+5. **Infrastructure (`seebeck_prime.infrastructure`, 2 modules):** ✅ built
+   - `PandasTabularDataStore` implements the port structurally (0 internal imports).
+
+### 3.2 Remaining Target Components (not yet implemented)
+
+1. **Central Data Registry (`seebeck_prime.domain.dataset` / `context`):** ⬜ target
    - Single source of truth for experimental data tables and sample metadata.
    - Decoupled from Qt table widgets (Qt views observe or bind to the registry).
-   - Tracks data origins (measured, calculated, interpolated, manual entry).
-4. **Dependency-Aware Calculation Engine:**
+   - Tracks data origins (measured, calculated, interpolated, manual entry) — `DataOrigin` tags are not yet enforced at runtime.
+2. **Dependency-Aware Calculation Engine:** ⬜ target
    - Evaluates calculation prerequisites dynamically.
    - Triggers re-computation of dependent properties only when prerequisite columns change.
-5. **Application Layer (`seebeck_prime.application`):**
-   - Orchestrates multi-step workflows (e.g., sample file loading $\rightarrow$ unit normalization $\rightarrow$ transport calculation $\rightarrow$ uncertainty propagation).
-   - Coordinates single-sample and multi-sample comparisons.
-6. **Visualization Layer (`seebeck_prime.visualization` / `plot`):**
-   - Generates publication-ready figures via Matplotlib and `scienceplots`.
-   - Independent of Qt window widgets; outputs either to Qt canvas widgets or standalone vector files (PDF, SVG, PNG).
-7. **User Interface (`seebeck_prime.ui`):**
-   - PyQt6 views, docks, and dialogs.
-   - Dispatches user events to application services; displays registry data.
+   - Today, table properties are calculated sequentially through DataFrame assignments and dialog handlers (see §4.2).
+3. **Standalone Visualization Package (`seebeck_prime.visualization`):** ⬜ target
+   - Publication-ready figures via Matplotlib / `scienceplots`, independent of Qt window widgets; outputs to Qt canvas widgets or standalone vector files (PDF, SVG, PNG).
+   - Today, plotting lives in `presentation/plot_window.py` and `main_table_plots.py` (Qt-coupled, which is acceptable for the desktop application).
 
 ---
 
@@ -159,7 +145,7 @@ In experimental thermoelectric analysis, multiple transport properties depend on
 
 ### 4.2 Implementation Reality vs Target
 - **Current Live Reality:**  
-  The active application calculates properties sequentially via DataFrame column assignments in `recalculate_all_properties()` or dialog handlers. No dynamic dependency graph exists; missing columns simply raise key errors or produce empty series.
+  The active application still calculates table properties sequentially through DataFrame assignments and dialog handlers. No dynamic calculation registry or dependency graph exists yet; adding either is a later phase requirement.
 - **Target Architecture:**  
   A light dependency graph (`CalculationNode` / `RegistryContext`) determines topological execution order and invalidates downstream caches when upstream measurements are modified.
 
@@ -184,18 +170,19 @@ To protect maintainability, usability, and scientific rigor, the following hard 
 Every architectural pattern and component is classified into one of three distinct categories:
 
 ### 6.1 CURRENT (Verified Live Components)
+- **Layered Modular Monolith (as built):** gui → presentation → application → domain, enforced by 32 architecture/import-root tests; legacy tree deleted and guarded against return.
 - **PyQt6 GUI Foundation:** Live desktop UI utilizing `QMainWindow`, `QTableWidget`, and modal dialogs.
 - **Pandas DataFrame Core State:** Tabular data stored in DataFrames with columns for $T$, $S$, $\sigma$, $\kappa$, $PF$, $\kappa_e$, $\kappa_L$, $ZT$.
 - **Analytical Gaussian Error Propagation:** Taylor-series based error propagation for standard transport formulas.
 - **Matplotlib Multi-Window Plotting:** Dynamic generation of property plots with error bars and customizable styling.
-- **Domain Layer Extraction:** Decoupled modules in `src/seebeck_prime/domain/` for calculations, units, and constants.
+- **Domain Layer Extraction (complete):** All science in `src/domain/` — calculations, uncertainty, units, SPB, Hall, phonon, transport, device efficiency, analysis, validation, constants.
+- **Unit-Conversion Consolidation (complete):** One vocabulary in `domain/units.py`; table-facing front end `application/unit_conversion.py` with `QuantityKind` (13 kinds), vectorised batch converters, and linear uncertainty scaling.
+- **Presentation Consolidation (complete):** All 9 live dialogs in `presentation/dialogs/`; no legacy namespace imports anywhere in `src/`.
+- **Composition Root Discipline:** `main.py` is the only place a concrete persistence adapter is instantiated; dialogs delegate science to application use cases (enforced by test).
 
 ### 6.2 TARGET (Agreed Incremental Improvements)
-- **Unified Application Entry Point:** Wiring `main.py` directly into `seebeck_prime.application` and the cleaned `seebeck_prime.gui`.
-- **Restoration of Missing Source Files:** Re-integrating or cleanly replacing deleted modules (`table_widget.py`, `main_window.py`) from verified domain equivalents.
-- **Unified Unit Engine:** Replacing UI-level unit conversions in `unit_converter.py` with pure domain conversions from `domain.units`.
-- **Deduplication of Scientific Formulas:** Ensuring `error_propagation.py` and `plugins/thermal.py` call `domain.calculations` exclusively.
-- **Automated Test Harness:** Rebuilding a comprehensive unit, regression, and reference-value test suite (`tests/`).
+- **Central Data Registry & Calculation Registration:** Add an independent calculation registry and modular input/output contracts after scientific baselines are established (see §3.2 items 1–2).
+- **Verification Coverage:** Expand independent reference datasets, end-to-end Qt workflow checks, and migration/compatibility tests.
 
 ### 6.3 DEFERRED (Out-of-Scope or Future Milestones)
 - **Complex Multi-Band / Non-Parabolic Kane Models:** Deferred to post-v1.0 after single-band models are rigorously tested.

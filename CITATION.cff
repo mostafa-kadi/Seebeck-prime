@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: "If you use Seebeck Prime in your research, please cite it using these metadata or the accompanying SoftwareX article."
+title: "Seebeck Prime"
+subtitle: "Open-source analysis platform for experimental thermoelectric transport properties"
+version: "0.1.0"
+date-released: "2026-11-13"
+license: MIT
+repository-code: "https://github.com/mostafa-kadi/Seebeck-prime"
+url: "https://github.com/mostafa-kadi/Seebeck-prime"
+authors:
+  - family-names: Elkady
+    given-names: "Mostafa M."
+    # TODO(author): confirm the author list (names, ORCIDs, affiliations)
+    # before the public release / Zenodo DOI minting; this entry mirrors the
+    # identity declared in src/seebeck_prime/__init__.py (__author__).
+keywords:
+  - thermoelectrics
+  - "figure of merit"
+  - "Seebeck coefficient"
+  - "electrical conductivity"
+  - "thermal conductivity"
+  - "power factor"
+  - "single parabolic band model"
+  - "uncertainty propagation"
+abstract: >-
+  Seebeck Prime is an open-source desktop application and headless Python API
+  for experimental thermoelectric materials research. It processes measured
+  transport data (Seebeck coefficient, electrical conductivity, total thermal
+  conductivity), performs unit conversion through one unit-normalised path,
+  calculates derived properties (power factor, electronic and lattice thermal
+  conductivity, figure of merit, device efficiencies), propagates analytical
+  uncertainties, and fits single-parabolic-band, Hall and weighted-mobility
+  models, with publication-grade plotting.
