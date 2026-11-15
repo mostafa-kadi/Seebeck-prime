@@ -1,6 +1,13 @@
 # Seebeck-Prime — Code Review: Problem Register
 
 **Type:** Full static + runtime code review of the Python source tree.
+
+> **Update 2026-11-15:** the weighted-mobility defect identified in the later
+> scientific audit has been corrected against Snyder et al. (2020), and the
+> independent reference, regression tests, golden value and documentation have
+> been updated on branch `fix/weighted-mobility-scientific-correction`. The
+> remaining CR-03…CR-07 and CR-09…CR-14 findings below have not been re-audited
+> or remediated in this change.
 **Date:** 2026-11-12
 **Scope:** all 83 Python files — 75 in `src/`, 7 in `tools/`, 1 in `scripts/`
 (~8,250 non-blank/non-comment LOC in `src`)
