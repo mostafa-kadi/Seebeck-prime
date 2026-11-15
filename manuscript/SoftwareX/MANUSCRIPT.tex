@@ -63,8 +63,11 @@ unit-normalised workflow, provided through a Qt interface for interactive use
 and a headless API for reproducible scripting. Implemented models include three
 Lorenz-number descriptions (constant, empirical, and rigorous
 single-parabolic-band), Fermi--Dirac integrals, carrier density and
-effective-mass estimation, Hall analysis, weighted mobility, laser-flash
-thermal conductivity and first-order uncertainty propagation. Calculations are
+effective-mass estimation, Hall analysis, Snyder et al. weighted mobility
+(calculated with the published empirical expression and regression-tested
+against an independent equation transcription, but not experimentally
+benchmarked in the current dataset), laser-flash thermal conductivity and
+first-order uncertainty propagation. Calculations are
 verified against independently written reference implementations (relative
 errors $10^{-14}$--$10^{-6}$) and against four published experimental datasets
 (power factor and figure of merit within $1.3$--$5.9\,\%$). The software
@@ -110,7 +113,7 @@ CONFIRM]}.
 \hline
 C1 & Current code version & 0.1.0 (released 2026-11-13; reconciled across the changelog, package metadata and \texttt{\_\_version\_\_}) \\
 \hline
-C2 & Permanent GitHub link to code/repository used for this code version & \url{https://github.com/mostafa-kadi/Seebeck-prime} \textbf{[AUTHOR TO CONFIRM: repository must be made public before submission]}; the repository contains a documented \texttt{README.md}, \texttt{LICENSE} and \texttt{Licence.txt} \\
+C2 & Permanent GitHub link to code/repository used for this code version & \url{https://github.com/mostafa-kadi/Seebeck-prime} \textbf{Public GitHub repository}; the repository contains a documented \texttt{README.md}, \texttt{LICENSE} and \texttt{Licence.txt} \\
 \hline
 C3 & Legal Code License & MIT Licence, \url{https://opensource.org/licenses/MIT}; licence text shipped as \texttt{LICENSE} / \texttt{Licence.txt} in the repository \\
 \hline
@@ -364,8 +367,7 @@ physical models are not universal.
 \section{Impact}
 \label{sec:impact}
 
-No user, download or adoption statistics are claimed; the software has not yet
-been publicly released (see \textbf{Current executable software version}). The
+No user, download or adoption statistics are claimed. The source repository is publicly accessible; no adoption statistics are available. The
 expected impact rests on the demonstrated capability:
 
 \begin{itemize}
@@ -412,18 +414,20 @@ Documented limitations, stated so that no capability is overstated:
         is \textbf{not implemented}; current propagation assumes independent
         inputs.
   \item Kane/Dingle/multiband Lorenz models are \textbf{not implemented}.
-  \item The weighted-mobility implementation is \textbf{not experimentally
-        validated}; its behaviour is documented, including documented
-        divergence from an earlier internal formulation.
-  \item The PbTe and weighted-mobility benchmark comparisons remain
-        \textbf{unverified}.
-  \item Public release, licensing finalisation and version reconciliation are
-        pending (release-phase items).
+  \item Weighted mobility follows the empirical Snyder et al. (2020)
+        expression and is regression-tested against an independent
+        transcription of the published equation. It is \textbf{not
+        experimentally validated} in the current benchmark collection because
+        no usable matched mobility reference is available.
+  \item The PbTe comparison remains \textbf{unverified}; weighted mobility
+        has no experimental benchmark in the current dataset.
+  \item A permanent archival release and DOI-backed software snapshot remain
+        to be completed before submission.
 \end{itemize}
 
-Future work prioritises: a public GitHub release with licence and archival;
-covariance-aware uncertainty propagation; the raw V/I measurement chain as a
-separate modular workflow; and systematic GUI test coverage.
+Future work prioritises: a DOI-backed archival release; covariance-aware
+uncertainty propagation; the raw V/I measurement chain as a separate modular
+workflow; and systematic GUI test coverage.
 
 %% ============================================================================
 %% 6. CONCLUSIONS
@@ -489,7 +493,7 @@ complete record.
 \hline
 \textbf{Item} & \textbf{Value} \\
 \hline
-Permanent link & \url{https://github.com/mostafa-kadi/Seebeck-prime} \textbf{[AUTHOR TO CONFIRM: repository must be made public before submission]} \\
+Permanent link & \url{https://github.com/mostafa-kadi/Seebeck-prime} \textbf{Public GitHub repository} \\
 \hline
 Legal Code License & MIT Licence (\texttt{LICENSE} / \texttt{Licence.txt} in the repository) \\
 \hline
@@ -497,7 +501,7 @@ Current code version & 0.1.0 \\
 \hline
 Current version date & 2026-11-13 \\
 \hline
-Code repository & \url{https://github.com/mostafa-kadi/Seebeck-prime} \textbf{[AUTHOR TO CONFIRM: repository must be made public before submission]} \\
+Code repository & \url{https://github.com/mostafa-kadi/Seebeck-prime} \textbf{Public GitHub repository} \\
 \hline
 Related research manuscripts & This article. \\
 \hline

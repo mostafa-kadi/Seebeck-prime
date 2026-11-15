@@ -226,32 +226,28 @@ Per core scientific software integrity standards:
 
 ---
 
-### 3.4 Weighted Mobility ($\mu_W$)
-- **Model Name:** Weighted Mobility Estimator (Snyder-style)
-- **Current Source Location:** `src/domain/transport.py::calculate_weighted_mobility` (presentation: `src/legacy/ui/dialogs/weighted_mobility_dialog.py`)
+### 3.4 Weighted Mobility ($\\mu_W$)
+- **Model Name:** Snyder et al. empirical weighted-mobility estimator
+- **Current Source Location:** `src/domain/transport.py::calculate_weighted_mobility`
 - **Actual Implementation Status:** `IMPLEMENTED`
-- **Equation / Algorithm (as implemented):**
-  $$\mu_W = 331 \cdot \frac{1}{\rho} \cdot \left(\frac{T}{300}\right)^{-3/2} \cdot \mathrm{shape}\!\left(\frac{|S|}{k_B/e}\right)$$
-  $$\mathrm{shape}(s) = \frac{\exp(s-2)}{1+\exp(-5(s-1))} + \frac{3\pi^2}{s\left(1+\exp(5(s-1))\right)}$$
+- **Equation / Algorithm:** The implementation follows Snyder et al. (2020), *Advanced Materials*, 32, 2001537, DOI: 10.1002/adma.202001537:
+  $$\\mu_W = 331\\frac{\\mathrm{cm}^2}{\\mathrm{V\\,s}}\\left(\\frac{\\mathrm{m\\Omega\\,cm}}{\\rho}\\right)\\left(\\frac{T}{300\\,\\mathrm{K}}\\right)^{-3/2}\\left[\\frac{\\exp(s-2)}{1+\\exp[-5(s-1)]}+\\frac{(3/\\pi^2)s}{1+\\exp[5(s-1)]}\\right]$$
+  where $s=|S|/(k_B/e)$ and the paper uses $k_B/e=86.3\\,\\mu\\mathrm{V/K}$. The implementation uses the CODATA-derived value from `physical_constants.py`.
 - **Input Parameters & Units:**
-  - `resistivity_mohm_cm`: $\rho$ [mΩ·cm]
-  - `seebeck_uv_k`: $|S|$ [µV/K]
-  - `temperature_k`: $T$ [K]
+  - `resistivity_mohm_cm`: $\\rho$ [mΩ·cm], strictly positive
+  - `seebeck_uv_k`: $S$ [µV/K]; the published relation uses $|S|$
+  - `temperature_k`: $T$ [K], strictly positive
 - **Output Parameters & Units:**
-  - $\mu_W$: Weighted mobility [cm²/(V·s)]
-- **Scientific Assumptions:** Acoustic phonon scattering ($r = -1/2$, $\mu \propto T^{-3/2}$) in a single parabolic band; the shape factor is a closed-form approximation of the SPB transport integrals expressed through the reduced Seebeck coefficient.
+  - $\\mu_W$: Weighted mobility [cm²/(V·s)]
+- **Scientific Assumptions:** Empirical single-band descriptor; its explicit $T^{-3/2}$ dependence corresponds to the acoustic-phonon-scattering approximation.
 - **Known Limitations:**
-  - Yields systematic errors if optical phonon scattering or ionized impurity scattering dominates.
-  - **The shape factor diverges as $|S| \to 0$** (the $3\pi^2/s$ term), so the estimator returns values of $10^{12}$ cm²/(V·s) and above for Seebeck coefficients below ~1 µV/K. Real thermoelectric mobilities are 1–1000 cm²/(V·s).
-  - **Not the Hall mobility.** $\mu_W$ and $\mu_H = |R_H|\sigma$ are different physical quantities; they coincide only in the non-degenerate limit with $m^\* \approx m_e$.
-  - **No experimental validation.** The only published carrier-mobility curve in the benchmark set is negative and unusable, so there is no reference against which this model can be checked.
+  - It is a weighted mobility, not the Hall mobility $\\mu_H=|R_H|\\sigma$.
+  - The relation is empirical and should not be treated as a universal transport law for multiband, bipolar, strongly anisotropic, or non-acoustic-scattering systems.
+  - The repository's benchmark set has no usable independently published mobility curve for the same specimen and conditions. Therefore the implementation is **numerically verified against the published equation but not experimentally validated**.
 - **References:**
-  - Snyder, G. J. et al. (2020). *Weighted mobility*. Advanced Materials, 32, 2001537.
-  - Snyder, G. J. et al. (2022). *Using chemical potential to understand thermoelectric properties*. PRX Energy.
-- **Existing Tests:** `tests/scientific/test_independent_references.py` (independent implementation, ≤1e-9), `tests/scientific/test_weighted_mobility_audit.py` (unit convention, scaling laws, divergence characterisation), `tests/test_transport_models.py`.
-- **Independent Validation Status:** *Numerically verified; experimentally unverified.* An earlier revision of this register printed a different expression,
-  $$\mu_W = \frac{3 h^3 \sigma}{8 \pi e (2 m_e k_B T)^{3/2}}\left[\frac{\exp(s-2)}{1+\exp(-5(s-1))} + \frac{3}{\pi^2}s\right]^{-1},$$
-  which the implementation does **not** evaluate: the two differ by a factor of 1.49 to 8.25 over a representative grid, because their second shape terms and their prefactors differ. The register has been corrected to describe the implemented expression; the divergence from the previously-printed form is an **open item** that requires the primary source and an experimental reference, neither of which is available (see `validation/remediation/WEIGHTED_MOBILITY_AUDIT.md`). The implementation was **not** changed.
+  - Snyder, G. J., Snyder, A. H., Wood, M., Gurunathan, R., Snyder, B. H. & Niu, C. (2020). *Weighted Mobility*. Advanced Materials, 32, 2001537. DOI: 10.1002/adma.202001537.
+- **Existing Tests:** `tests/scientific/test_weighted_mobility_audit.py` (independent transcription of the published equation, positive/negative Seebeck parity, 50–250 µV/K regression grid, scaling, broadcasting and invalid-input handling).
+- **Independent Validation Status:** **Equation parity verified; experimental validation unavailable.** The previous implementation used an incorrect second shape term, $(3\\pi^2/s)/(1+\\exp[5(s-1)])$, which caused a non-physical divergence as $|S|\\to0$. This was corrected to the published term $(3/\\pi^2)s/(1+\\exp[5(s-1)])$. The earlier internal alternative based on an inverted bracket and a different prefactor is not the Snyder et al. (2020) empirical expression and has been removed from the model description. See `validation/remediation/WEIGHTED_MOBILITY_AUDIT.md`.
 
 ---
 

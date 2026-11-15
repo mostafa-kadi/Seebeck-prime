@@ -16,8 +16,10 @@
 
 Four published datasets were selected — one per requested material family, plus
 a fourth (Si₈₀Ge₂₀P₁) that publishes electronic/lattice thermal conductivity
-and carrier data, which is what makes the κₑ, lattice-κ, weighted-mobility and
-SPB comparisons possible at all.
+and carrier data, which is what makes the κₑ, lattice-κ and SPB comparisons
+possible. The published carrier-mobility curve for this benchmark is negative
+and physically unusable, so it cannot provide an experimental weighted-mobility
+comparison; see `EXTENDED_VALIDATION_REPORT.md` §7.2.
 
 | Benchmark id | Family | Composition | Publication | DOI |
 |---|---|---|---|---|

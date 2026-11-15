@@ -10,7 +10,7 @@ from seebeck_prime.domain.transport import (
 
 def test_weighted_mobility_reference_value():
     result = calculate_weighted_mobility(300.0, 10.0, 200.0)
-    assert result == pytest.approx(46.133554635270364)
+    assert result == pytest.approx(45.59401525698672, rel=2e-12)
 
 
 def test_weighted_mobility_preserves_array_shape_and_zero_resistivity_behavior():

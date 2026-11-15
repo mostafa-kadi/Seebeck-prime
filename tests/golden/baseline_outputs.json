@@ -183,7 +183,7 @@
     ],
     "spb_rigorous_lorenz_eta1_l05": 1.9687582411592718e-08,
     "spb_seebeck_roundtrip": 187.59030065756522,
-    "weighted_mobility_reference": 46.133517055263376
+    "weighted_mobility_reference": 45.59401525698672
   },
   "uncertainty": {
     "density_error": 0.024494897427831782,

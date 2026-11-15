@@ -201,7 +201,7 @@ limitations report).
 
 | ID | Relation | Status |
 |---|---|---|
-| E-39 | μ_w = 331·(1/ρ)·(T/300)^{−1.5}·shape(\|S\|/(k_B/e)) | VERIFIED (independent implementation, ≤1e-9); **physics NOT experimentally validated** |
+| E-39 | Snyder et al. (2020): μ_w = 331·(mΩ·cm/ρ)·(T/300 K)^{−3/2}·[exp(s−2)/(1+exp(−5(s−1))) + (3/π²)s/(1+exp(5(s−1)))], s=|S|/(k_B/e) | VERIFIED against independent published-equation transcription; **not experimentally validated** |
 | E-40 | ρ conversions to mΩ·cm | VERIFIED |
 | E-41 | MAD filter, OLS regression, linear interpolation, temperature rounding/alignment | VERIFIED |
 | E-42 | Physical-constraint validators (T, σ, S, κ, κ_L) | VERIFIED (messages, severities) — **reachability is NOT verified**: no production path calls `validate_measurement_data`/`validate_dataset` (audit D-01) |

@@ -223,24 +223,27 @@ def lorenz_kim(seebeck_uv_k) -> float:
 
 
 def weighted_mobility_snyder(temperature_k, resistivity_mohm_cm, seebeck_uv_k):
-    """Snyder-style weighted mobility [cm^2/(V*s)] (documented approximation).
+    """Independent transcription of Snyder et al. (2020), Eq. 1.
 
-        mu_w = 331 * (1/rho) * (T/300)^{-3/2} * shape(|S|/(k_B/e))
-
-    with the shape factor
-
-        shape(s) = exp(s-2)/(1+exp(-5(s-1))) + 3 pi^2 / (s (1+exp(5(s-1))))
+    Returns weighted mobility in cm^2/(V*s), with rho in mOhm*cm,
+    temperature in K and Seebeck coefficient in uV/K.
     """
-    s = np.abs(np.asarray(seebeck_uv_k)) / K_B_OVER_E_UV
-    term1 = np.exp(s - 2.0) / (1.0 + np.exp(-5.0 * (s - 1.0)))
-    term2 = (3.0 * math.pi**2 / s) / (1.0 + np.exp(5.0 * (s - 1.0)))
-    shape = term1 + term2
-    return (
-        331.0
-        * (1.0 / np.asarray(resistivity_mohm_cm))
-        * (np.asarray(temperature_k) / 300.0) ** (-1.5)
-        * shape
+    temperature, resistivity, seebeck = np.broadcast_arrays(
+        np.asarray(temperature_k, dtype=float),
+        np.asarray(resistivity_mohm_cm, dtype=float),
+        np.asarray(seebeck_uv_k, dtype=float),
     )
+    s = np.abs(seebeck) / K_B_OVER_E_UV
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        logistic_1 = np.exp(-np.logaddexp(0.0, -5.0 * (s - 1.0)))
+        logistic_2 = np.exp(-np.logaddexp(0.0, 5.0 * (s - 1.0)))
+        shape = np.exp(s - 2.0) * logistic_1 + (3.0 / math.pi**2) * s * logistic_2
+        result = 331.0 * (1.0 / resistivity) * (temperature / 300.0) ** (-1.5) * shape
+    valid = (
+        np.isfinite(temperature) & np.isfinite(resistivity) & np.isfinite(seebeck)
+        & (temperature > 0.0) & (resistivity > 0.0)
+    )
+    return np.where(valid, result, np.nan)
 
 
 def seebeck_from_regression(delta_t_k, delta_v_v):
