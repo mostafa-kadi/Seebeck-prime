@@ -146,12 +146,12 @@ calculate_zt(pd.Series([1.0,1.0]), pd.Series([300.0,300.0]), pd.Series([1.0,0.0]
 | `src/presentation/table_widget.py:112` | **Problem** — silent failure on cell handling |
 | `src/presentation/table_handler.py:240` | **Problem** — silent failure |
 | `src/application/use_cases.py:72` | **Acceptable** — `except KeyError: continue`, documented rationale |
-| `src/legacy/ui/dialogs/{device_efficiency,hall_mobility,spb,weighted_mobility}_dialog.py` | **Borderline** — deliberate UI guards, but unlogged |
+| `src/presentation/dialogs/{device_efficiency,hall_mobility,spb,weighted_mobility}_dialog.py` | **Borderline** — deliberate UI guards, but unlogged |
 
 ### CR-06 · `zip()` without `strict=` (12 sites) — silent truncation risk
 
 - **Files:** `application/spb_batch.py:38,79`; `presentation/kappa_logic.py:338,368`;
-  `legacy/…/device_efficiency_dialog.py:204`, `hall_mobility_dialog.py:377`,
+  `presentation/dialogs/device_efficiency_dialog.py:204`, `hall_mobility_dialog.py:377`,
   `kappa_dialog.py:469,470,472,473`, `weighted_mobility_dialog.py:147,172`
 - **Impact:** unequal-length inputs are silently truncated (e.g. a batch result
   list shorter than the sample list is paired with the wrong samples).
@@ -160,7 +160,7 @@ calculate_zt(pd.Series([1.0,1.0]), pd.Series([300.0,300.0]), pd.Series([1.0,0.0]
 ### CR-07 · Dead code: 64 unused imports (22 in one file)
 
 - `src/gui/main_window.py` **×22**, `presentation/table_handler.py` ×8,
-  `presentation/plot_window.py` ×7, `legacy/.../plot_settings_dialog.py` ×4, others ×1–2.
+  `presentation/plot_window.py` ×7, `presentation/dialogs/plot_settings_dialog.py` ×4, others ×1–2.
 - **Impact:** signal of organic drift/dead code; slows review; risks importing
   broken optional dependencies at startup.
 - **Fix:** ruff `--fix` (all 64 are auto-fixable).
