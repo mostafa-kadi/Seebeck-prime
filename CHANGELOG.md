@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased]
+
+### Scientific corrections
+
+- Corrected weighted mobility to the published Snyder et al. (2020) expression
+  (DOI: 10.1002/adma.202001537). The previous second shape term was incorrect
+  and diverged at low Seebeck coefficient.
+- Added independent equation-level regression tests, including Seebeck sign,
+  scaling, broadcasting and invalid-input cases.
+- Updated the independent reference implementation, golden regression value,
+  audit script, scientific model register, validation limitations, benchmark
+  documentation, README and SoftwareX manuscript.
+- Weighted mobility remains experimentally unvalidated because the current
+  benchmark set has no usable matched mobility reference.
+
 All notable changes to **Seebeck Prime** are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
