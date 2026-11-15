@@ -61,13 +61,13 @@ def calculate_weighted_mobility(temperature_k, resistivity_mohm_cm, seebeck_uv_k
     reduced_seebeck = np.abs(seebeck) / _KB_OVER_E_UV_K
 
     # Stable evaluation of 1/(1 + exp(-x)) and 1/(1 + exp(x)).
-    logistic_positive = np.exp(
-        -np.logaddexp(0.0, -5.0 * (reduced_seebeck - 1.0))
-    )
-    logistic_negative = np.exp(
-        -np.logaddexp(0.0, 5.0 * (reduced_seebeck - 1.0))
-    )
     with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        logistic_positive = np.exp(
+            -np.logaddexp(0.0, -5.0 * (reduced_seebeck - 1.0))
+        )
+        logistic_negative = np.exp(
+            -np.logaddexp(0.0, 5.0 * (reduced_seebeck - 1.0))
+        )
         term1 = np.exp(reduced_seebeck - 2.0) * logistic_positive
         term2 = (
             (3.0 / np.pi**2)
