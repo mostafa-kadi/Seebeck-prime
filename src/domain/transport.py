@@ -6,66 +6,84 @@ import numpy as np
 
 from seebeck_prime.domain.physical_constants import KB_OVER_E_UV_K
 
-# Retained to preserve the established weighted-mobility implementation.
-# The reduced Seebeck uses the exact CODATA value k_B/e = 86.173332621... uV/K
-# (previously a rounded 86.1733 literal; the difference is 3.8e-7 relative).
-_KB_E_UV_K = KB_OVER_E_UV_K
 _WEIGHTED_MOBILITY_COEFFICIENT = 331.0
 
 
 def calculate_weighted_mobility(temperature_k, resistivity_mohm_cm, seebeck_uv_k):
-    """Calculate the application's Snyder-style weighted mobility estimate.
+    """Calculate Snyder et al. weighted mobility.
 
-    Units: temperature [K], resistivity [mΩ·cm], Seebeck [µV/K], output
-    [cm²/(V·s)]. This preserves the prior UI-logic algorithm and defaults.
+    Implements the empirical expression reported by Snyder et al.,
+    Advanced Materials 32 (2020), 2001537, DOI: 10.1002/adma.202001537.
 
-    The implemented expression is
+    Parameters
+    ----------
+    temperature_k:
+        Absolute temperature in K.
+    resistivity_mohm_cm:
+        Electrical resistivity in mΩ·cm.
+    seebeck_uv_k:
+        Seebeck coefficient in µV/K. Its sign is removed as specified by
+        the published expression.
 
-        mu_w = 331 * (1/rho) * (T/300)^(-1.5) * shape(|S|/(k_B/e))
-        shape(s) = exp(s-2)/(1+exp(-5(s-1)))
-                   + 3*pi^2/(s*(1+exp(5(s-1))))
+    Returns
+    -------
+    float or numpy.ndarray
+        Weighted mobility in cm²/(V·s). Inputs are broadcast together.
+        Non-finite inputs, non-positive temperatures, and non-positive
+        resistivities produce NaN at the corresponding output positions.
 
-    Assumptions of the underlying approximation (see
-    docs/SCIENTIFIC_EQUATION_AUDIT.md, issue SE-020):
+    Notes
+    -----
+    With s = |S|/(k_B/e), the shape factor is
 
-    * The temperature factor (T/300)^(-1.5) assumes acoustic-phonon
-      (deformation-potential) scattering, i.e. mu ~ T^(-3/2).
-    * The shape factor is a closed-form approximation of the SPB transport
-      integrals expressed through the reduced Seebeck coefficient.
-    * The prefactor 331.0 is an empirical constant that also carries the
-      unit conversion between mOhm*cm and cm^2/(V*s).
+        exp(s - 2) / (1 + exp(-5(s - 1)))
+        + (3/pi²) s / (1 + exp(5(s - 1))).
 
-    Known limitations (see validation/remediation/WEIGHTED_MOBILITY_AUDIT.md):
-
-    * The shape factor **diverges as |S| -> 0** because of its 3*pi^2/s
-      term, so the estimator returns values far above any physical mobility
-      (1-1000 cm^2/(V*s)) for Seebeck coefficients below ~1 uV/K.
-    * This is **not** the Hall mobility: mu_H = |R_H|*sigma is a different
-      physical quantity, and the two coincide only in the non-degenerate
-      limit with an effective mass near the electron mass.
-    * The model has **no experimental validation** - the only published
-      carrier-mobility curve in the benchmark set is negative and unusable.
-    * An earlier revision of the scientific model register printed a
-      different expression, which this implementation does not evaluate;
-      the two differ by a factor of 1.5 to 8.2. The implementation was not
-      changed, because the primary source and an experimental reference are
-      both unavailable.
+    The logistic factors are evaluated in log space to avoid overflow.
+    The T^(-3/2) factor reflects the acoustic-phonon-scattering
+    approximation used by the empirical expression. Weighted mobility is
+    not Hall mobility and is not an experimentally validated output for
+    the benchmark set currently shipped with this application.
     """
-    temperature = np.array(temperature_k, dtype=float)
-    resistivity = np.array(resistivity_mohm_cm, dtype=float)
-    seebeck = np.abs(np.array(seebeck_uv_k, dtype=float))
+    temperature, resistivity, seebeck = np.broadcast_arrays(
+        np.asarray(temperature_k, dtype=float),
+        np.asarray(resistivity_mohm_cm, dtype=float),
+        np.asarray(seebeck_uv_k, dtype=float),
+    )
 
-    reduced_seebeck = seebeck / _KB_E_UV_K
-    term1 = np.exp(reduced_seebeck - 2) / (
-        1 + np.exp(-5 * (reduced_seebeck - 1))
+    valid = (
+        np.isfinite(temperature)
+        & np.isfinite(resistivity)
+        & np.isfinite(seebeck)
+        & (temperature > 0.0)
+        & (resistivity > 0.0)
     )
-    term2 = (3 * (np.pi**2) / (reduced_seebeck + 1e-9)) / (
-        1 + np.exp(5 * (reduced_seebeck - 1))
+    reduced_seebeck = np.abs(seebeck) / _KB_E_OVER_E_UV_K
+
+    # Stable evaluation of 1/(1 + exp(-x)) and 1/(1 + exp(x)).
+    logistic_positive = np.exp(
+        -np.logaddexp(0.0, -5.0 * (reduced_seebeck - 1.0))
     )
-    shape_factor = term1 + term2
-    temperature_factor = (temperature / 300.0) ** (-1.5)
-    resistivity = np.where(resistivity == 0, np.nan, resistivity)
-    return _WEIGHTED_MOBILITY_COEFFICIENT * (1 / resistivity) * temperature_factor * shape_factor
+    logistic_negative = np.exp(
+        -np.logaddexp(0.0, 5.0 * (reduced_seebeck - 1.0))
+    )
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        term1 = np.exp(reduced_seebeck - 2.0) * logistic_positive
+        term2 = (
+            (3.0 / np.pi**2)
+            * reduced_seebeck
+            * logistic_negative
+        )
+        shape_factor = term1 + term2
+        temperature_factor = (temperature / 300.0) ** (-1.5)
+        result = (
+            _WEIGHTED_MOBILITY_COEFFICIENT
+            * (1.0 / resistivity)
+            * temperature_factor
+            * shape_factor
+        )
+
+    return np.where(valid, result, np.nan)
 
 
 def resistivity_to_mohm_cm(value, unit):
