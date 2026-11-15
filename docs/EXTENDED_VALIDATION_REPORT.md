@@ -29,8 +29,10 @@ were made in the process and are recorded below:
    validated** by the available data; the published measurements actually
    *contradict* the single-parabolic-band acoustic-phonon model for the
    available SiGe sample by ≈35 % (§4.3).
-3. The **weighted mobility is not experimentally validated** at all, because
-   the only published reference curve in the datasets is unusable (§7.2).
+3. The weighted-mobility implementation now matches the Snyder et al. (2020)
+   published equation and is covered by equation-level regression tests. It is
+   **not experimentally validated**, because the only published reference
+   mobility curve in the datasets is unusable (§7.2).
 
 The numerical agreement of the software with an independent implementation is
 reported throughout as *independent numerical verification*, never as
