@@ -1,7 +1,7 @@
 # Scientific Equation Audit — Seebeck Prime
 
 **Audit date:** 2026-11-11
-**Scope:** every scientific equation, physical model, numerical method, conversion factor and derived quantity in the Seebeck Prime codebase (`src/domain`, `src/application`, `src/presentation`, `src/gui`, `src/legacy`, `src/plugins`).
+**Scope:** every scientific equation, physical model, numerical method, conversion factor and derived quantity in the Seebeck Prime codebase (`src/domain`, `src/application`, `src/presentation`, `src/gui`, `src/infrastructure`, `src/plugins`).
 **Method:** (1) static extraction of every formula and conversion factor; (2) independent analytical re-derivation of each equation; (3) dimensional analysis of every derived quantity; (4) independent numerical verification against closed-form references (the application functions were never used as their own reference); (5) boundary, extreme and invalid-input testing.
 
 > **Scope limit, stated up front:** this is a *code-vs-theory* audit. It verifies that each implemented expression matches the governing physical relation, that units are consistent, and that the numerics reproduce analytically known limits. It is **not** a validation of the software against measured reference materials or certified reference values: no such reference data exist in the repository, and none were invented. Equations whose governing model cannot be checked from the code alone are marked **UNVERIFIED** (section 8).
@@ -13,7 +13,7 @@
 | Metric | Count |
 |---|---|
 | Scientific equations / model relations identified | 42 |
-| Unit-conversion relations audited | 38 distinct factors (22 in the canonical unit layer + 16 inline factors in the GUI/legacy layers) |
+| Unit-conversion relations audited | 38 distinct factors (22 in the canonical unit layer + 16 inline factors in presentation/GUI layers) |
 | Dimensional analyses performed | 16 derived quantities |
 | **CRITICAL** errors found and fixed | 3 |
 | **HIGH** errors found and fixed | 5 |
@@ -128,7 +128,7 @@ All corrections are documented in section 9, are covered by regression tests tha
 | Wiedemann–Franz with a single constant L | E-02 | Valid only for elastic, single-band, low-T transport; **documented limitation** (§8) |
 | κ_L = κ − κₑ (no bipolar separation) | E-03 | Valid below the bipolar onset; **documented limitation** (§8) |
 | SPB with a single parabolic band and one scattering exponent | E-27…E-33 | Model-dependent; **documented** (§8) |
-| Acoustic-phonon T^{−3/2} mobility for weighted mobility | E-40 | Now stated explicitly in the docstring (SE-020) |
+| Acoustic-phonon T^{−3/2} dependence in the Snyder weighted-mobility estimator | E-40 | Empirical model assumption; equation corrected to Snyder et al. (2020) on 2026-11-15 |
 | First-order (linearised) Gaussian propagation | E-08…E-15 | Valid for small relative uncertainties; **documented** (§8) |
 | Hall factor r_H = 1 unless supplied | E-23 | Single-carrier assumption; **documented** (§8) |
 
