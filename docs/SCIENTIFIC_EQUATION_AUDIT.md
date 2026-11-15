@@ -245,7 +245,7 @@ Independent reference calculations (never calling the application functions) wer
 | Dulong–Petit | 3nR | match to 1e-12 |
 | ZT_eng / η_eng | S̄²T̄/(ρ̄κ̄); Ioffe | match to 1e-9 (**after SE-001**) |
 | η_eng ≡ η_max for constant properties | exact requirement | now satisfied (**SE-001**) |
-| μ_w | documented closed form | match to 1e-9 |
+| μ_w | Snyder et al. (2020) published expression; independent scalar transcription | regression tests at 50–250 µV/K, sign parity, scaling, broadcasting and invalid inputs |
 | E_a (eV, J/mol) | constructed Arrhenius data | exact to 1e-9 |
 
 **Boundary and extreme inputs exercised:** zero, negative, 1e-12-scale and 1e12-scale inputs; NaN and ±inf propagation; κ = 0; T = 0; n ≤ 0; R_H = 0; I = 0 or B = 0 (raises `ZeroDivisionError` by design); ΔT ≤ 0 (returns `None`); η beyond ±50 (asymptotic branches); invalid unit strings (raise `ValueError`, or pass through only where the legacy contract demands it).
