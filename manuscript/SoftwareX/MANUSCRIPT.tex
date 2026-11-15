@@ -63,8 +63,11 @@ unit-normalised workflow, provided through a Qt interface for interactive use
 and a headless API for reproducible scripting. Implemented models include three
 Lorenz-number descriptions (constant, empirical, and rigorous
 single-parabolic-band), Fermi--Dirac integrals, carrier density and
-effective-mass estimation, Hall analysis, weighted mobility, laser-flash
-thermal conductivity and first-order uncertainty propagation. Calculations are
+effective-mass estimation, Hall analysis, Snyder et al. weighted mobility
+(calculated with the published empirical expression and regression-tested
+against an independent equation transcription, but not experimentally
+benchmarked in the current dataset), laser-flash thermal conductivity and
+first-order uncertainty propagation. Calculations are
 verified against independently written reference implementations (relative
 errors $10^{-14}$--$10^{-6}$) and against four published experimental datasets
 (power factor and figure of merit within $1.3$--$5.9\,\%$). The software
@@ -412,11 +415,13 @@ Documented limitations, stated so that no capability is overstated:
         is \textbf{not implemented}; current propagation assumes independent
         inputs.
   \item Kane/Dingle/multiband Lorenz models are \textbf{not implemented}.
-  \item The weighted-mobility implementation is \textbf{not experimentally
-        validated}; its behaviour is documented, including documented
-        divergence from an earlier internal formulation.
-  \item The PbTe and weighted-mobility benchmark comparisons remain
-        \textbf{unverified}.
+  \item Weighted mobility follows the empirical Snyder et al. (2020)
+        expression and is regression-tested against an independent
+        transcription of the published equation. It is \textbf{not
+        experimentally validated} in the current benchmark collection because
+        no usable matched mobility reference is available.
+  \item The PbTe comparison remains \textbf{unverified}; weighted mobility
+        has no experimental benchmark in the current dataset.
   \item Public release, licensing finalisation and version reconciliation are
         pending (release-phase items).
 \end{itemize}
